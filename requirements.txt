@@ -1,0 +1,4 @@
+flask==2.3.3
+rich==14.2.0
+requests
+llama_cpp_python==0.3.16
