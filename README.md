@@ -1,6 +1,6 @@
 # 🧠 Flask AI ChatBot Web App
 
-A simple web-based chatbot interface built with **Flask** and **vanilla JavaScript**, styled to resemble a messaging app. It accepts a **question** and **context**, sends it to a Flask backend via POST, and displays the response in a chat bubble UI.
+A simple web-based chatbot interface built with **Flask** and **vanilla JavaScript**, styled to resemble a messaging app. It accepts a **question**, sends it to a Flask backend via POST, and displays the response in a chat bubble UI.
 
 ---
 

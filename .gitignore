@@ -1,4 +1,6 @@
-gguf_dir
+gguf_dir/*
+
+!gguf_dir/.gitkeep
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
