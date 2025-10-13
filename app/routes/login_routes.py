@@ -1,7 +1,8 @@
 
 
 from flask import Blueprint, render_template, request, redirect, url_for, session
-from app.config.app_vars import CRASH_SYSTEM_CTX, USER_MODEL_MAP
+from app.config.app_vars import CRASH_SYSTEM_CTX, USER_LLM_CONVO_MAP
+from app.llm.llm_conversation_ctx import LLMConversationCTX
 from app.llm.llm_model_factory import create_model
 
 login_r = Blueprint('login_r', __name__)
@@ -15,11 +16,9 @@ def login():
         username = request.form.get('username')
         if username:
             session['username'] = username
-            model = create_model(system_context=CRASH_SYSTEM_CTX)
-            model.load_model()
-            USER_MODEL_MAP.update({username:  model}),
+            USER_LLM_CONVO_MAP.update({username:  LLMConversationCTX()}),
 
-            return redirect(url_for('main_r.index', username=username))
+            return redirect(url_for('main_r.index'))
         else:
             return render_template('login.html', error="Username is required.")
 

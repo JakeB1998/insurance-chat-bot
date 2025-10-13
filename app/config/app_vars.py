@@ -7,7 +7,7 @@ from flask import redirect, session, url_for, request
 from app.llm.llm_model_factory import create_model
 
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     format='%(asctime)s [%(levelname)s] [%(module)s:%(lineno)d] %(message)s',
     handlers=[
         logging.StreamHandler()              # Also log to console
@@ -39,7 +39,7 @@ del __FP
 MAIN_MODEL = create_model(system_context=CRASH_SYSTEM_CTX)
 MAIN_MODEL.load_model()
 
-USER_MODEL_MAP = {}
+USER_LLM_CONVO_MAP = {}
 
 def login_required(f):
     @wraps(f)

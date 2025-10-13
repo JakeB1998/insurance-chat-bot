@@ -6,74 +6,54 @@ from pathlib import Path
 from llama_cpp import Llama
 from rich.console import Console
 from dataclasses import dataclass
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Tuple, Union
 
 from app.llm.llm_config import ModelConfig
+from app.llm.llm_conversation_ctx import LLMConversationCTX
+from app.utils.llm_utils import build_conversation_prompt, load_model
 
 
-class InsuranceLLM:
+class InsuranceLLMCTX:
     def __init__(self, config: ModelConfig, system_context: str =""):
         self.config = config
         self.llm_ctx = None
-        self.conversation_history: List[Dict[str, str]] = []
-        
+
         self.system_context = system_context
 
 
     def load_model(self) -> None:
+
+        quantized_path = os.path.join(os.getcwd(), "gguf_dir")
+        directory = Path(quantized_path)
         try:
-            quantized_path = os.path.join(os.getcwd(), "gguf_dir")
-            directory = Path(quantized_path)
-
-            try:
-                model_path = str(list(directory.glob(self.config.model_file))[0])
-            except IndexError as e:
-                raise e
-
-
-            self.llm_ctx = Llama(
-                model_path=model_path,
-                n_gpu_layers=self.config.n_gpu_layers,
-                n_ctx=self.config.n_ctx,
-                n_batch=self.config.n_batch,
-                num_beams=self.config.num_beams,
-                verbose=self.config.verbose,
-                use_mlock=self.config.use_mlock,
-                use_mmap=self.config.use_mmap,
-                offload_kqv=self.config.offload_kqv
-            )
-        except Exception as e:
+            model_path = str(list(directory.glob(self.config.model_file))[0])
+        except IndexError as e:
             raise e
 
-    def build_conversation_prompt(self, new_question: str, context: str = "") -> str:
+        self.llm_ctx = load_model(
+            model_file_path=model_path,
+            n_gpu_layers=self.config.n_gpu_layers,
+            n_ctx=self.config.n_ctx,
+            n_batch=self.config.n_batch,
+            num_beams=self.config.num_beams,
+            verbose=self.config.verbose,
+            use_mlock=self.config.use_mlock,
+            use_mmap=self.config.use_mmap,
+            offload_kqv=self.config.offload_kqv
+        )
 
-        if not context:
-            context = ""
+    def build_conversation_prompt(self, new_question: str, context: str = "", conversation_history: Union[List[dict], LLMConversationCTX] = None) -> str:
+        if conversation_history is None:
+            conversation_history = []
 
-        prompt = f"System: {self.system_context}\n\n"
-        
-        # Add conversation history
-        for exchange in self.conversation_history:
-            prompt += f"User: {exchange['user']}\n\n"
-            prompt += f"Assistant: {exchange['assistant']}\n\n"
-        
-        # Add the new question
-        if context:
-            prompt += f"User: Context: {context}\nQuestion: {new_question}\n\n"
-        else:
-            prompt += f"User: {new_question}\n\n"
-            
-        prompt += "Assistant:"
-        return prompt
+        return build_conversation_prompt(question=new_question, system_context=self.system_context, context=context, conversation_history=conversation_history)
 
-    def generate_response(self, prompt: str, logger = None) -> Tuple[str, int, float]:
-
+    def generate_response(self, prompt: str, logger = None, chunk_callback = None) -> Tuple[str, int, float]:
         if logger is None:
             logger = logging.getLogger(__name__)
 
         if not self.llm_ctx:
             raise RuntimeError("Model not loaded. Call load_model() first.")
-        
 
         complete_response = ""
         token_count = 0
@@ -93,7 +73,9 @@ class InsuranceLLM:
                 complete_response += text_chunk
                 token_count += 1
                 logger.debug(text_chunk)
-            
+                if chunk_callback is not None:
+                    chunk_callback(text_chunk)
+
             elapsed_time = time.time() - start_time
             return complete_response, token_count, elapsed_time
         except Exception as e:
