@@ -38,8 +38,8 @@ your_project/
 
 ## 🛠️ Requirements
 
-- Python 3.7+
-- Flask
+- Python 3.14+
+- flask
 - lamma_cp
 
 ### 🔧 Install Dependencies
@@ -67,12 +67,6 @@ http://127.0.0.1:5000/
 
 4. Start chatting with the bot!
 
----
-
-## 💡 Default Behavior
-
-- The chatbot currently echoes a placeholder response using the question and context.
-- You can customize the logic in `app.py` under the `/chat` route to use a real AI model or external API.
 
 ---
 
@@ -93,14 +87,7 @@ Response:
 }
 ```
 
----
 
-## 🎨 Customization Ideas
-
-- Replace the dummy answer logic with OpenAI API, Hugging Face model, or your own NLP backend.
-- Add user authentication to store chat history per user.
-- Improve UI with Bootstrap or Tailwind CSS.
-- Add typing animation or loader while waiting for a response.
 
 ---
 
