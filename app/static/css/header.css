@@ -1,0 +1,42 @@
+/* Header container */
+header {
+  background-color: #e31837; /* State Farm Red */
+  padding: 15px 30px;
+  color: white;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* 👈 Ensures left + right layout */
+  height: 60px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Left logo/title */
+.logo {
+  font-weight: bold;
+  font-size: 20px;
+  color: white;
+}
+
+/* Navigation list */
+nav ul {
+  display: flex;
+  gap: 20px;
+}
+
+/* Nav links */
+nav ul li a {
+  color: white;
+  font-weight: bold;
+  padding: 8px 12px;
+  transition: background-color 0.3s;
+  border-radius: 4px;
+}
+
+nav ul li a:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}

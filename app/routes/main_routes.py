@@ -1,18 +1,22 @@
 
 
-from flask import Blueprint, jsonify, render_template, request
+from flask import Blueprint, jsonify, render_template, request, redirect, url_for, session
 
-from app.config.app_vars import MODEL, LOGGER
+from app.config.app_vars import MAIN_MODEL, LOGGER, USER_MODEL_MAP, login_required
 
 main_r = Blueprint('main_r', __name__)
 
 
+
 @main_r.route('/')
+@login_required
 def index():
     return render_template('index.html')
 
 
+
 @main_r.route('/chat', methods=['POST'])
+@login_required
 def chat():
     data = request.get_json()
 
@@ -23,11 +27,16 @@ def chat():
     if not question:
         return jsonify({'error': 'Missing question or context'}), 400
 
-    prompt = MODEL.build_conversation_prompt(question, context)
-    response, tokens, elapsed_time = MODEL.generate_response(prompt, logger=LOGGER)
+    model = USER_MODEL_MAP.get(session['username'])
+
+    if model is None:
+        return jsonify({'error': 'LLM Model not found'}), 404
+
+    prompt = model.build_conversation_prompt(question, context)
+    response, tokens, elapsed_time = model.generate_response(prompt, logger=LOGGER)
 
     # Add to conversation history
-    MODEL.conversation_history.append({
+    model.conversation_history.append({
         "user": question,
         "assistant": response
     })

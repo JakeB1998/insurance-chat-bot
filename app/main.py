@@ -1,13 +1,19 @@
+import os
+
 from flask import Flask, render_template, request, jsonify
 
 from app.config.app_vars import LOGGER
 
 from app.routes.main_routes import main_r
+from app.routes.login_routes import login_r
 
 app = Flask(__name__)
 
+app.secret_key = os.urandom(24)
+
 
 app.register_blueprint(main_r)
+app.register_blueprint(login_r)
 
 @app.before_request
 def log_request():

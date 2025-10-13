@@ -32,7 +32,7 @@ class ModelConfig:
 
 
 class InsuranceLLM:
-    def __init__(self, config: ModelConfig):
+    def __init__(self, config: ModelConfig, context: str =""):
         self.config = config
         self.llm_ctx = None
         self.conversation_history: List[Dict[str, str]] = []
@@ -49,6 +49,8 @@ class InsuranceLLM:
             "complex coverage plans, or other pertinent insurance concepts. Use precise insurance terminology while "
             "still aiming to make the explanation clear and accessible to a general audience."
         )
+
+        self.context = context
 
     def load_model(self) -> None:
         try:
@@ -76,6 +78,10 @@ class InsuranceLLM:
             raise e
 
     def build_conversation_prompt(self, new_question: str, context: str = "") -> str:
+
+        if not context:
+            context = self.context
+
         prompt = f"System: {self.system_message}\n\n"
         
         # Add conversation history

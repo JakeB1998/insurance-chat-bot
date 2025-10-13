@@ -1,12 +1,14 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends "base.html" %}
+
 <head>
-  <meta charset="UTF-8">
-  <title>ChatBot</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block head %}
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+    {% endblock %}
 </head>
 <body>
-  <div class="chat-container">
+  {% block content %}
+<div class="chat-container">
     <div class="chat-header">AI ChatBot</div>
     <div id="chat-window" class="chat-window"></div>
 
@@ -14,7 +16,7 @@
       <textarea id="question" placeholder="Type your question..." required></textarea>
       <button type="submit">Send</button>
     </form>
-  </div>
+</div>
 
   <script>
     const form = document.getElementById('chat-form');
@@ -60,5 +62,6 @@
       }
     });
   </script>
+{% endblock %}
 </body>
-</html>
+

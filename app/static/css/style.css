@@ -1,87 +1,66 @@
+/* Reset & base */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
 body {
-  font-family: Arial, sans-serif;
+  font-family: "Segoe UI", sans-serif;
   background-color: #f4f4f4;
+  color: #333;
+  line-height: 1.6;
+}
+
+a {
+  text-decoration: none;
+  color: #333;
+}
+
+ul {
+  list-style: none;
+}
+
+/* Header and Navigation */
+header {
+  background-color: #2c3e50;
+  padding: 15px 0;
+  color: white;
+}
+
+nav ul {
   display: flex;
   justify-content: center;
-  align-items: center;
-  height: 100vh;
-  margin: 0;
+  gap: 20px;
 }
 
-.chat-container {
-  width: 400px;
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.chat-header {
-  background-color: #4a90e2;
+nav ul li a {
   color: white;
-  padding: 15px;
-  font-size: 18px;
-  text-align: center;
+  font-weight: bold;
+  padding: 8px 12px;
+  transition: background-color 0.3s;
 }
 
-.chat-window {
-  flex: 1;
-  padding: 15px;
-  overflow-y: auto;
-  background-color: #fafafa;
-}
-
-.message {
-  margin: 10px 0;
-  padding: 10px 15px;
-  border-radius: 20px;
-  max-width: 80%;
-  line-height: 1.4;
-  word-wrap: break-word;
-}
-
-.message.user {
-  background-color: #dcf8c6;
-  align-self: flex-end;
-}
-
-.message.bot {
-  background-color: #e2e2e2;
-  align-self: flex-start;
-}
-
-#chat-form {
-  display: flex;
-  flex-direction: column;
-  padding: 10px;
-  border-top: 1px solid #ddd;
-}
-
-#context {
-  resize: none;
-  padding: 8px;
-  margin-bottom: 8px;
-  height: 60px;
-  font-size: 14px;
-}
-
-#question {
-  padding: 10px;
-  font-size: 14px;
-  margin-bottom: 8px;
-}
-
-#chat-form button {
-  padding: 10px;
-  background-color: #4a90e2;
-  color: white;
-  border: none;
-  cursor: pointer;
+nav ul li a:hover {
+  background-color: #34495e;
   border-radius: 4px;
 }
 
-#chat-form button:hover {
-  background-color: #3b7dd8;
+/*!* Main Content *!*/
+/*main {*/
+/*    max-width: 800px;*/
+/*    margin: 30px auto;*/
+/*    padding: 0 20px;*/
+/*    background-color: white;*/
+/*    border-radius: 8px;*/
+/*    box-shadow: 0 4px 8px*/
+/*}*/
+
+/* Add margin to main content so it's not hidden under header */
+main {
+  margin-top: 80px; /* adjust based on header height */
+  padding: 20px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.05);
 }

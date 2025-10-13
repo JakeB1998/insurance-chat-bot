@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>{% block title %}My Website{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/header.css') }}">
+  {% block head %}
+
+  {% endblock %}
+</head>
+<body>
+{% include 'header.html' %}
+
+  <main>
+    {% block content %}
+    <!-- Default content -->
+        <footer>
+    <p>&copy; 2025 Insurance Chat Bot</p>
+    </footer>
+    {% endblock %}
+  </main>
+
+
+
+</body>
+</html>
