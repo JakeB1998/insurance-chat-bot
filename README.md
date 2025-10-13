@@ -55,19 +55,34 @@ pip install -r requirements.txt
 ## ▶️ How to Run
 
 1. Clone the repository or copy the files into a directory.
-2. Run the Flask app:
+2. Create a cirtuak environment
+
+```bash
+python -m venv venv
+```
+
+3. install dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+4. Download LLM [Model](https://huggingface.co/Raj-Maharajwala/OpenInsuranceLLM-Llama3-8B-GGUF/resolve/main/openinsurancellm-llama3-8b.Q4_K_M.gguf?download=true)
+5. Store Model in directory 'gguf_dir' as 'openinsurancellm-llama3-8b.Q5_K_M.gguf'
+
+6. Run the Flask app:
 
 ```bash
 python app/main.py
 ```
 
-3. Open your browser and go to:
+7. Open your browser and go to:
 
 ```
 http://127.0.0.1:5000/
 ```
 
-4. Start chatting with the bot!
+8. Start chatting with the bot!
 
 
 ---
