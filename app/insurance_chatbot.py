@@ -32,25 +32,13 @@ class ModelConfig:
 
 
 class InsuranceLLM:
-    def __init__(self, config: ModelConfig, context: str =""):
+    def __init__(self, config: ModelConfig, system_context: str =""):
         self.config = config
         self.llm_ctx = None
         self.conversation_history: List[Dict[str, str]] = []
         
-        self.system_message = (
-            "This is a chat between a user and an artificial intelligence assistant. "
-            "The assistant gives helpful, detailed, and polite answers to the user's questions based on the context. "
-            "The assistant should also indicate when the answer cannot be found in the context. "
-            "You are an expert from the Insurance domain with extensive insurance knowledge and "
-            "professional writer skills, especially about insurance policies. "
-            "Your name is OpenInsuranceLLM, and you were developed by Raj Maharajwala. "
-            "You are willing to help answer the user's query with a detailed explanation. "
-            "In your explanation, leverage your deep insurance expertise, such as relevant insurance policies, "
-            "complex coverage plans, or other pertinent insurance concepts. Use precise insurance terminology while "
-            "still aiming to make the explanation clear and accessible to a general audience."
-        )
+        self.system_context = system_context
 
-        self.context = context
 
     def load_model(self) -> None:
         try:
@@ -80,9 +68,9 @@ class InsuranceLLM:
     def build_conversation_prompt(self, new_question: str, context: str = "") -> str:
 
         if not context:
-            context = self.context
+            context = ""
 
-        prompt = f"System: {self.system_message}\n\n"
+        prompt = f"System: {self.system_context}\n\n"
         
         # Add conversation history
         for exchange in self.conversation_history:

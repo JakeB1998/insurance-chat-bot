@@ -1,17 +1,13 @@
 from app.insurance_chatbot import InsuranceLLM, ModelConfig
 
 
-def create_model_for_user(username, context_template: str = None):
+def create_model_for_user(username, context: str = None):
     config = ModelConfig()
 
-    context = ""
-
-    if context_template is not None:
-        context = context_template
-        context = context.replace("{name}", username)
 
 
-    model = InsuranceLLM(config, context=context)
+
+    model = InsuranceLLM(config, system_context=context)
 
     return model
 
@@ -19,5 +15,5 @@ def create_model_for_user(username, context_template: str = None):
 
 def create_model():
     config = ModelConfig()
-    model = InsuranceLLM(config, context="")
+    model = InsuranceLLM(config, system_context="")
     return model

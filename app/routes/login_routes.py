@@ -15,7 +15,7 @@ def login():
         username = request.form.get('username')
         if username:
             session['username'] = username
-            model = create_model_for_user(username=username, context_template=CRASH_CONTEXT_TEMPLATE)
+            model = create_model_for_user(username=username, context=CRASH_CONTEXT_TEMPLATE)
             model.load_model()
             USER_MODEL_MAP.update({username:  model}),
 

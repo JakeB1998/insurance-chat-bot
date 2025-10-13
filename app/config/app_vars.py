@@ -23,7 +23,7 @@ APP_STATIC_CONFIG_DIR_FP = f"{os.getcwd()}{os.path.sep}app{os.path.sep}static{os
 
 CRASH_CONTEXT_TEMPLATE = ""
 
-__FP = f"{APP_STATIC_CONFIG_DIR_FP}crash-context-template.txt"
+__FP = f"{APP_STATIC_CONFIG_DIR_FP}crash-context.txt"
 
 try:
     if os.path.isfile(__FP):

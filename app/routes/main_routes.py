@@ -22,7 +22,6 @@ def chat():
 
     # Extract 'question' and 'context' keys safely
     question = data.get('question')
-    context = data.get('context', '')
 
     if not question:
         return jsonify({'error': 'Missing question or context'}), 400
@@ -32,7 +31,7 @@ def chat():
     if model is None:
         return jsonify({'error': 'LLM Model not found'}), 404
 
-    prompt = model.build_conversation_prompt(question, context)
+    prompt = model.build_conversation_prompt(question, f"The users name is {session['username']}")
     response, tokens, elapsed_time = model.generate_response(prompt, logger=LOGGER)
 
     # Add to conversation history
@@ -46,7 +45,6 @@ def chat():
     # Do something with question and context
     return jsonify({
         'received_question': question,
-        'received_context': context,
         'response': response
     })
 
