@@ -42,23 +42,24 @@ def chat():
     def generate():
         response_accum = ""
         latest_chunk = ""
-        word_buffer = []
+        token_buffer = ""
+        token_count = 0
         # Wrap receive_chunk in a generator pattern
         for chunk in MAIN_MODEL.generate_response(prompt, logger=LOGGER):
             chunk = str(chunk)
             response_accum += chunk
+            token_count += len(chunk)
+            token_buffer += chunk
+
             # LOGGER.debug(repr(chunk))
-            yield f"data: {chunk}\n\n"
+            if token_count > 10:
+                yield f"data: {token_buffer}\n\n"
+                token_buffer = ''
+                token_count = 0
+
+        yield f"data: {token_buffer}\n\n"
 
         convo.add(question=question, response=response_accum)
 
     return Response(stream_with_context(generate()), mimetype='text/event-stream')
-
-
-
-    # Do something with question and context
-    return jsonify({
-        'received_question': question,
-        'response': response
-    })
 
