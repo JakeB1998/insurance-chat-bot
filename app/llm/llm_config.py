@@ -40,7 +40,7 @@ class ModelConfig:
         temperature: float = 0.1,
         top_k: int = 15,
         top_p: float = 0.2,
-        repeat_penalty: float = 1.2,
+        repeat_penalty: float = 2.2,
         num_beams: int = 4,
         n_gpu_layers: int = -2,
         n_ctx: int = 2048,

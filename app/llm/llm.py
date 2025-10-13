@@ -48,7 +48,7 @@ class InsuranceLLMCTX:
 
         return build_conversation_prompt(question=new_question, system_context=self.system_context, context=context, conversation_history=conversation_history)
 
-    def generate_response(self, prompt: str, logger = None, chunk_callback = None) -> Tuple[str, int, float]:
+    def generate_response(self, prompt: str, logger = None):
         if logger is None:
             logger = logging.getLogger(__name__)
 
@@ -72,12 +72,8 @@ class InsuranceLLMCTX:
                 text_chunk = chunk["choices"][0]["text"]
                 complete_response += text_chunk
                 token_count += 1
-                logger.debug(text_chunk)
-                if chunk_callback is not None:
-                    chunk_callback(text_chunk)
+                yield text_chunk
 
-            elapsed_time = time.time() - start_time
-            return complete_response, token_count, elapsed_time
         except Exception as e:
             logger.error(f"\n[red]Error generating response: {str(e)}[/red]")
             return f"I encountered an error while generating a response. Please try again or ask a different question.", 0, 0

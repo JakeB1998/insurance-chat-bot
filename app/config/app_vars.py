@@ -4,7 +4,9 @@ from functools import wraps
 
 from flask import redirect, session, url_for, request
 
+from app.llm.llm_config import ModelConfig
 from app.llm.llm_model_factory import create_model
+from app.utils.file_utils import load_from_file
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -20,23 +22,13 @@ LOGGER = logging.getLogger(__name__)
 
 APP_STATIC_CONFIG_DIR_FP = f"{os.getcwd()}{os.path.sep}app{os.path.sep}static{os.path.sep}config{os.path.sep}"
 
-CRASH_SYSTEM_CTX = ""
+CRASH_SYSTEM_CTX = load_from_file(f"{APP_STATIC_CONFIG_DIR_FP}crash-context.txt")
+CRASH_USER_TEMPLATE = load_from_file(f"{APP_STATIC_CONFIG_DIR_FP}crash-user-context-template.txt")
+RESPONSE_LLM_FORMATTING_TEMPLATE = load_from_file(f"{APP_STATIC_CONFIG_DIR_FP}response-formatting-template.txt")
 
-__FP = f"{APP_STATIC_CONFIG_DIR_FP}crash-context.txt"
+# CRASH_SYSTEM_CTX += "\n\n" + RESPONSE_LLM_FORMATTING_TEMPLATE
 
-try:
-    if os.path.isfile(__FP):
-        with open(__FP, "r", encoding="utf-8") as f:
-            CRASH_SYSTEM_CTX = f.read()
-
-    else:
-        LOGGER.warning(f"File {__FP} not found.")
-except Exception as e:
-    LOGGER.error(f"Failed to load context from {__FP}", e)
-
-del __FP
-
-MAIN_MODEL = create_model(system_context=CRASH_SYSTEM_CTX)
+MAIN_MODEL = create_model(system_context=CRASH_SYSTEM_CTX, config=ModelConfig())
 MAIN_MODEL.load_model()
 
 USER_LLM_CONVO_MAP = {}

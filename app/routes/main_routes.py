@@ -1,9 +1,12 @@
 
 
-from flask import Blueprint, jsonify, render_template, request, redirect, url_for, session
+from flask import Blueprint, jsonify, render_template, request, redirect, url_for, session, stream_with_context, \
+    Response
 
-from app.config.app_vars import MAIN_MODEL, LOGGER, USER_LLM_CONVO_MAP, login_required
+from app.config.app_vars import MAIN_MODEL, LOGGER, USER_LLM_CONVO_MAP, login_required, CRASH_USER_TEMPLATE, \
+    RESPONSE_LLM_FORMATTING_TEMPLATE, APP_STATIC_CONFIG_DIR_FP
 from app.llm.llm_conversation_ctx import LLMConversationCTX
+from app.utils.llm_context_template_utils import apply_user_template
 
 main_r = Blueprint('main_r', __name__)
 
@@ -20,26 +23,36 @@ def index():
 @login_required
 def chat():
     data = request.get_json()
-
-    # Extract 'question' and 'context' keys safely
     question = data.get('question')
 
     if not question:
-        return jsonify({'error': 'Missing question or context'}), 400
+        return jsonify({'error': 'Missing question'}), 400
 
     convo: LLMConversationCTX = USER_LLM_CONVO_MAP.get(session['username'])
 
     if MAIN_MODEL is None:
         return jsonify({'error': 'LLM Model not found'}), 404
 
-    def receive_chunk(chunk):
-        pass
+    context = apply_user_template(CRASH_USER_TEMPLATE, session["username"])
 
-    context = f"The customers name is {session['username']}. They were in a car accident. give them a step by step guide on what to do starting with step 1."
-    prompt = MAIN_MODEL.build_conversation_prompt(question, f"The users name is {session['username']}", conversation_history=convo)
-    response, tokens, elapsed_time = MAIN_MODEL.generate_response(prompt, logger=LOGGER, chunk_callback=receive_chunk)
+    with open(f"{APP_STATIC_CONFIG_DIR_FP}example-sf-policy.txt", 'r') as f:
+        context += "\n\n\nAnything to do with the customers policy, refer to: \n\n" + f.read()
+    prompt = MAIN_MODEL.build_conversation_prompt(question, conversation_history=convo)
 
-    convo.add(question=question, response=response)
+    def generate():
+        response_accum = ""
+        latest_chunk = ""
+        word_buffer = []
+        # Wrap receive_chunk in a generator pattern
+        for chunk in MAIN_MODEL.generate_response(prompt, logger=LOGGER):
+            chunk = str(chunk)
+            response_accum += chunk
+            # LOGGER.debug(repr(chunk))
+            yield f"data: {chunk}\n\n"
+
+        convo.add(question=question, response=response_accum)
+
+    return Response(stream_with_context(generate()), mimetype='text/event-stream')
 
 
 

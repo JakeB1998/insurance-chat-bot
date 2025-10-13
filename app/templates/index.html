@@ -30,17 +30,21 @@
       chatWindow.scrollTop = chatWindow.scrollHeight;
     }
 
-    form.addEventListener('submit', async (e) => {
+   form.addEventListener('submit', async (e) => {
       e.preventDefault();
 
-      const question = document.getElementById('question').value.trim();
-
+      const questionInput = document.getElementById('question');
+      const question = questionInput.value.trim();
       if (!question) return;
 
       addMessage('user', question);
+      questionInput.value = '';
 
-      // Clear input
-      document.getElementById('question').value = '';
+      const botMsgDiv = document.createElement('div');
+      botMsgDiv.classList.add('message', 'bot');
+      botMsgDiv.innerText = '';
+      chatWindow.appendChild(botMsgDiv);
+      chatWindow.scrollTop = chatWindow.scrollHeight;
 
       try {
         const res = await fetch('/chat', {
@@ -48,19 +52,37 @@
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ question})
+          body: JSON.stringify({ question })
         });
 
-        const data = await res.json();
-        if (data["response"]) {
-          addMessage('bot', data["response"]);
-        } else {
-          addMessage('bot', 'Sorry, something went wrong.');
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder('utf-8');
+        let done = false;
+
+        while (!done) {
+          const { value, done: doneReading } = await reader.read();
+          done = doneReading;
+
+          if (value) {
+            var chunk = decoder.decode(value);
+
+            if (chunk.endsWith('\n\n')) {
+                  chunk = chunk.slice(0, -2);  // remove last 2 chars
+            }
+
+            if (chunk.startsWith('data: ')) {
+                chunk = chunk.replace('data: ', '')
+            }
+            botMsgDiv.innerText += chunk
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+
+          }
         }
       } catch (err) {
-        addMessage('bot', 'Error connecting to server.');
+        botMsgDiv.innerText = 'Error connecting to server.';
       }
     });
+
   </script>
 {% endblock %}
 </body>

@@ -9,7 +9,8 @@ body {
 }
 
 .chat-container {
-  width: 400px;
+  width: 700px;       /* wider chat */
+  max-width: 90vw;    /* won't overflow viewport */
   background: #fff;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
@@ -17,6 +18,7 @@ body {
   flex-direction: column;
   overflow: hidden;
 }
+
 
 .chat-header {
   background-color: #e31837;
@@ -68,10 +70,14 @@ body {
 }
 
 #question {
+  width: 100%;
+  box-sizing: border-box;
   padding: 10px;
   font-size: 14px;
   margin-bottom: 8px;
+  resize: vertical;
 }
+
 
 #chat-form button {
   padding: 10px;
