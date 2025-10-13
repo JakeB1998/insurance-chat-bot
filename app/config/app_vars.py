@@ -28,6 +28,7 @@ RESPONSE_LLM_FORMATTING_TEMPLATE = load_from_file(f"{APP_STATIC_CONFIG_DIR_FP}re
 
 # CRASH_SYSTEM_CTX += "\n\n" + RESPONSE_LLM_FORMATTING_TEMPLATE
 
+# MAIN_MODEL = create_model(system_context=CRASH_SYSTEM_CTX, config=ModelConfig(model_name="Qwen2.5-3B-IQ3_M", model_file="Qwen2.5-3B-IQ3_M.gguf"))
 MAIN_MODEL = create_model(system_context=CRASH_SYSTEM_CTX, config=ModelConfig())
 MAIN_MODEL.load_model()
 

@@ -1,0 +1,76 @@
+{
+  "insurance_company": "State Farm Mutual Automobile Insurance Company",
+  "policy": {
+    "type": "Auto Insurance Policy",
+    "policy_number": "SF-123456789",
+    "effective_date": "2025-01-01",
+    "expiration_date": "2026-01-01",
+    "named_insured": "John Doe",
+    "address": "123 Main Street, Springfield, IL 62704",
+    "vehicle": {
+      "year": 2018,
+      "make": "Honda",
+      "model": "Civic",
+      "vin": "1HGCM82633A004352"
+    },
+    "coverages": {
+      "liability": {
+        "description": "Covers bodily injury and property damage for which any insured becomes legally responsible due to an auto accident.",
+        "limits": {
+          "bodily_injury": {
+            "per_person": 100000,
+            "per_accident": 300000
+          },
+          "property_damage": {
+            "per_accident": 100000
+          }
+        }
+      },
+      "medical_payments": {
+        "description": "Covers reasonable medical expenses for injuries sustained by an insured in an auto accident, regardless of fault.",
+        "limit_per_person": 5000
+      },
+      "uninsured_underinsured_motorist": {
+        "description": "Covers bodily injury caused by a motorist who has no insurance or insufficient insurance.",
+        "uninsured_motorist": {
+          "per_person": 100000,
+          "per_accident": 300000
+        },
+        "underinsured_motorist": {
+          "per_person": 100000,
+          "per_accident": 300000
+        }
+      },
+      "collision": {
+        "description": "Covers damage to the covered vehicle caused by collision with another vehicle or object.",
+        "deductible": 500
+      },
+      "comprehensive": {
+        "description": "Covers damage to the covered vehicle not caused by collision, including theft, vandalism, fire, hail, or falling objects.",
+        "deductible": 250
+      }
+    },
+    "duties_after_accident_or_loss": [
+      "Notify us promptly.",
+      "Cooperate with any investigation.",
+      "Provide proof of loss.",
+      "Allow vehicle inspection."
+    ],
+    "exclusions": [
+      "Intentional acts.",
+      "Vehicles used for commercial purposes.",
+      "Racing or off-road use.",
+      "Use of a vehicle without permission."
+    ],
+    "general_conditions": [
+      "Policy changes must be approved by us in writing.",
+      "The policy may be canceled by either party with appropriate notice.",
+      "Fraud or misrepresentation may void the policy."
+    ],
+    "contact_information": {
+      "claims": "1-800-STATEFARM",
+      "website": "https://www.statefarm.com"
+    }
+  },
+  "thank_you_message": "Thank you for choosing State Farm®."
+}

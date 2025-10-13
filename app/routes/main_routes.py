@@ -35,9 +35,9 @@ def chat():
 
     context = apply_user_template(CRASH_USER_TEMPLATE, session["username"])
 
-    with open(f"{APP_STATIC_CONFIG_DIR_FP}example-sf-policy.txt", 'r') as f:
-        context += "\n\n\nAnything to do with the customers policy, refer to: \n\n" + f.read()
-    prompt = MAIN_MODEL.build_conversation_prompt(question, conversation_history=convo)
+    with open(f"{APP_STATIC_CONFIG_DIR_FP}example-sf-policy.json", 'r') as f:
+        context += "\n\n\nAnything to do with the customers policy, refer to their policy in JSON format: \n\n" + f.read()
+    prompt = MAIN_MODEL.build_conversation_prompt(question, context, conversation_history=convo)
 
     def generate():
         response_accum = ""
