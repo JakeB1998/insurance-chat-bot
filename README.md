@@ -8,21 +8,6 @@ A simple web-based chatbot interface built with **Flask** and **vanilla JavaScri
 
 ![App Screenshot](app-example.png)
 
----
-
-## 📂 Project Structure
-
-```
-your_project/
-│
-├── app.py                      # Flask server
-├── templates/
-│   └── index.html              # Main front-end HTML page
-├── static/
-│   └── style.css               # CSS styles for chat UI
-├── app-example.png            # Screenshot of the app
-└── README.md                   # This file
-```
 
 ---
 
@@ -55,7 +40,7 @@ pip install -r requirements.txt
 ## ▶️ How to Run
 
 1. Clone the repository or copy the files into a directory.
-2. Create a cirtuak environment
+2. Create a virtual environment
 
 ```bash
 python -m venv venv
@@ -68,7 +53,7 @@ pip install -r requirements.txt
 ```
 
 4. Download LLM [Model](https://huggingface.co/Raj-Maharajwala/OpenInsuranceLLM-Llama3-8B-GGUF/resolve/main/openinsurancellm-llama3-8b.Q4_K_M.gguf?download=true)
-5. Store Model in directory 'gguf_dir' as 'openinsurancellm-llama3-8b.Q5_K_M.gguf'
+5. Store Model in directory 'gguf_dir' as 'open-insurance-llm-q4_k_m.gguf'
 
 6. Run the Flask app:
 
