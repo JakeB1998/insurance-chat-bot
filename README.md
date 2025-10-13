@@ -38,6 +38,8 @@ your_project/
 
 ## 🛠️ Requirements
 
+Note: all the links are for windows systems
+
 - Python 3.14+
 - [Cmake](https://github.com/Kitware/CMake/releases/download/v4.1.2/cmake-4.1.2-windows-x86_64.msi)
 - [C++](https://aka.ms/vs/17/release/vc_redist.x64.exe) redistributable from visial studio
