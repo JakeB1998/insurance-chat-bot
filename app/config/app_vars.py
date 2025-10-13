@@ -4,8 +4,7 @@ from functools import wraps
 
 from flask import redirect, session, url_for, request
 
-from app.insurance_chatbot import ModelConfig, InsuranceLLM
-from app.utils.llm_model_factory import create_model
+from app.llm.llm_model_factory import create_model
 
 logging.basicConfig(
     level=logging.INFO,
@@ -21,14 +20,14 @@ LOGGER = logging.getLogger(__name__)
 
 APP_STATIC_CONFIG_DIR_FP = f"{os.getcwd()}{os.path.sep}app{os.path.sep}static{os.path.sep}config{os.path.sep}"
 
-CRASH_CONTEXT_TEMPLATE = ""
+CRASH_SYSTEM_CTX = ""
 
 __FP = f"{APP_STATIC_CONFIG_DIR_FP}crash-context.txt"
 
 try:
     if os.path.isfile(__FP):
         with open(__FP, "r", encoding="utf-8") as f:
-            CRASH_CONTEXT_TEMPLATE = f.read()
+            CRASH_SYSTEM_CTX = f.read()
 
     else:
         LOGGER.warning(f"File {__FP} not found.")
@@ -37,7 +36,7 @@ except Exception as e:
 
 del __FP
 
-MAIN_MODEL = create_model()
+MAIN_MODEL = create_model(system_context=CRASH_SYSTEM_CTX)
 MAIN_MODEL.load_model()
 
 USER_MODEL_MAP = {}

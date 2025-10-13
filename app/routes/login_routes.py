@@ -1,8 +1,8 @@
 
 
-from flask import Flask, Blueprint, render_template, request, redirect, url_for, session
-from app.config.app_vars import MAIN_MODEL, LOGGER, CRASH_CONTEXT_TEMPLATE, USER_MODEL_MAP
-from app.utils.llm_model_factory import create_model_for_user
+from flask import Blueprint, render_template, request, redirect, url_for, session
+from app.config.app_vars import CRASH_SYSTEM_CTX, USER_MODEL_MAP
+from app.llm.llm_model_factory import create_model
 
 login_r = Blueprint('login_r', __name__)
 
@@ -15,7 +15,7 @@ def login():
         username = request.form.get('username')
         if username:
             session['username'] = username
-            model = create_model_for_user(username=username, context=CRASH_CONTEXT_TEMPLATE)
+            model = create_model(system_context=CRASH_SYSTEM_CTX)
             model.load_model()
             USER_MODEL_MAP.update({username:  model}),
 

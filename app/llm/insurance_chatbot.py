@@ -8,27 +8,7 @@ from rich.console import Console
 from dataclasses import dataclass
 from typing import List, Dict, Any, Tuple
 
-@dataclass
-class ModelConfig:
-    # Optimized parameters for coherent responses and efficient performance on devices like MacBook Air M2
-    model_name: str = "Raj-Maharajwala/Open-Insurance-LLM-Llama3-8B-GGUF"
-    model_file: str = "./open-insurance-llm-q4_k_m.gguf"
-    # model_file: str = "open-insurance-llm-q8_0.gguf"  # 8-bit quantization; higher precision, better quality, increased resource usage
-    # model_file: str = "open-insurance-llm-q5_k_m.gguf"  # 5-bit quantization; balance between performance and resource efficiency
-    max_tokens: int = 1000  # Maximum number of tokens to generate in a single output
-    temperature: float = 0.1  # Controls randomness in output; lower values produce more coherent responses (performs scaling distribution)
-    top_k: int = 15  # After temperature scaling, Consider the top 15 most probable tokens during sampling
-    top_p: float = 0.2  # After reducing the set to 15 tokens, Uses nucleus sampling to select tokens with a cumulative probability of 20%
-    repeat_penalty: float = 1.2  # Penalize repeated tokens to reduce redundancy
-    num_beams: int = 4  # Number of beams for beam search; higher values improve quality at the cost of speed
-    n_gpu_layers: int = -2  # Number of layers to offload to GPU; -1 for full GPU utilization, -2 for automatic configuration
-    n_ctx: int = 2048  # Context window size; Llama 3 models support up to 8192 tokens context length
-    n_batch: int = 256  # Number of tokens to process simultaneously; adjust based on available hardware (suggested 512)
-    verbose: bool = False  # True for enabling verbose logging for debugging purposes
-    use_mmap: bool = False  # Memory-map model to reduce RAM usage; set to True if running on limited memory systems
-    use_mlock: bool = True  # Lock model into RAM to prevent swapping; improves performance on systems with sufficient RAM
-    offload_kqv: bool = True  # Offload key, query, value matrices to GPU to accelerate inference
-
+from app.llm.llm_config import ModelConfig
 
 
 class InsuranceLLM:
