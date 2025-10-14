@@ -33,5 +33,12 @@ def log_response(response):
 
 if __name__ == '__main__':
     LOGGER.info("Starting app")
-    app.run(debug=True)
+
+    expose = True
+    kwargs = {}
+
+    if expose:
+        kwargs.update({"host": "0.0.0.0"})
+
+    app.run(**kwargs, debug=True)
 
