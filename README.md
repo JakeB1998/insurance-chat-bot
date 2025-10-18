@@ -74,10 +74,11 @@ http://127.0.0.1:5000/
 
 ## ✏️ Example POST Request
 
+POST /chat
+
 ```json
 {
   "question": "Does my insurance cover rental cars after an accident?",
-  "context": "I was in a car accident last week and my vehicle is being repaired. I have comprehensive coverage with XYZ Insurance."
 }
 ```
 
