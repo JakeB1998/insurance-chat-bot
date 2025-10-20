@@ -1,3 +1,5 @@
+from app.assistant.intent import IntentTypes
+
 PATTERNS = [
     [{"LEMMA": "file"}, {"LEMMA": "a"}, {"LEMMA": "claim"}],
     [{"LEMMA": "report"}, {"LEMMA": "damage"}],
@@ -5,18 +7,20 @@ PATTERNS = [
 ]
 
 PATTERNS_MAP = {
-    "file_claim": [
+    IntentTypes.FILE_CLAIM: [
         [{"LEMMA": "file"}, {"LEMMA": "a"}, {"LEMMA": "claim"}],
         [{"LEMMA": "report"}, {"LEMMA": "damage"}],
         [{"LEMMA": "submit"}, {"LEMMA": "claim"}],
     ],
-    "get_claim": [
+    IntentTypes.GET_CLAIM: [
         [{"LEMMA": "get"}, {"LEMMA": "claim"}],
         [{"LEMMA": "check"}, {"LEMMA": "claim"}],
         [{"LEMMA": "status"}, {"LEMMA": "of"}, {"LEMMA": "claim"}],
         [{"LEMMA": "claim"}, {"LEMMA": "status"}],
         [{"LEMMA": "track"}, {"LEMMA": "claim"}],
     ],
+    IntentTypes.GET_AGENT: [
+        [{"LEMMA": "get"}, {"LEMMA": "agent"}], ]
 }
 
 class NLPConfig:

@@ -121,14 +121,19 @@
                 data.choices.forEach(choice => {
                   const button = document.createElement('button');
                   button.className = 'choice-button';
+
+                  if (choice) {
+                      choice = choice.charAt(0).toUpperCase() + choice.slice(1);
+                  }
+
                   button.innerText = choice;
 
                   button.onclick = () => {
-                    addMessage('user', choice); // Show choice in chat
-                    questionInput.value = choice;
-                    form.dispatchEvent(new Event('submit'));
-                    botMsgDiv.classList.remove('question');
-                    choiceForm.remove(); // remove form after answer
+                    // addMessage('user', choice); // Show choice in chat
+                    // questionInput.value = choice;
+                    // form.dispatchEvent(new Event('submit'));
+                    // botMsgDiv.classList.remove('question');
+                    // choiceForm.remove(); // remove form after answer
                   };
 
                   choiceForm.appendChild(button);
