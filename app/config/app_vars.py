@@ -4,6 +4,7 @@ from functools import wraps
 
 from flask import redirect, session, url_for, request
 
+from app.assistant.nlp.nlp_context import NLPContext
 from app.llm.llm_config import ModelConfig
 from app.llm.llm_model_factory import create_model
 from app.session_ctx import SessionContext
@@ -36,6 +37,8 @@ MAIN_MODEL.load_model()
 
 USER_LLM_CONVO_MAP = {}
 SESSION_CONTEXT_MAP = {}
+
+NPL_MODEL_CTX = NLPContext()
 
 def login_required(f):
     @wraps(f)
