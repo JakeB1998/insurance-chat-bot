@@ -1,89 +1,124 @@
 {% extends "base.html" %}
 
 <head>
-    {% block head %}
-
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
-    {% endblock %}
+  {% block head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+  {% endblock %}
 </head>
+
 <body>
-  {% block content %}
+{% block content %}
 <div class="chat-container">
-    <div class="chat-header">AI ChatBot</div>
-    <div id="chat-window" class="chat-window"></div>
+  <div class="chat-header">AI ChatBot</div>
+  <div id="chat-window" class="chat-window"></div>
 
-    <form id="chat-form">
-      <textarea id="question" placeholder="Type your question..." required></textarea>
-      <button type="submit">Send</button>
-    </form>
+  <form id="chat-form">
+    <textarea id="question" placeholder="Type your question..." required></textarea>
+    <button type="submit">Send</button>
+    <button type="button" id="cancel-button" style="display:none;">Cancel</button>
+  </form>
 </div>
+<script>
+  const form = document.getElementById('chat-form');
+  const chatWindow = document.getElementById('chat-window');
+  const cancelButton = document.getElementById('cancel-button');
 
-  <script>
-    const form = document.getElementById('chat-form');
-    const chatWindow = document.getElementById('chat-window');
+  let controller = null;
 
-    function addMessage(sender, text) {
-      const msgDiv = document.createElement('div');
-      msgDiv.classList.add('message', sender);
-      msgDiv.innerText = text;
-      chatWindow.appendChild(msgDiv);
-      chatWindow.scrollTop = chatWindow.scrollHeight;
-    }
+  function addMessage(sender, text) {
+    const msgDiv = document.createElement('div');
+    msgDiv.classList.add('message', sender);
+    msgDiv.innerText = text;
+    chatWindow.appendChild(msgDiv);
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+  }
 
-   form.addEventListener('submit', async (e) => {
-      e.preventDefault();
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
 
-      const questionInput = document.getElementById('question');
-      const question = questionInput.value.trim();
-      if (!question) return;
+    const questionInput = document.getElementById('question');
+    const question = questionInput.value.trim();
+    if (!question) return;
 
-      addMessage('user', question);
-      questionInput.value = '';
+    addMessage('user', question);
+    questionInput.value = '';
 
-      const botMsgDiv = document.createElement('div');
-      botMsgDiv.classList.add('message', 'bot');
-      botMsgDiv.innerText = '';
-      chatWindow.appendChild(botMsgDiv);
-      chatWindow.scrollTop = chatWindow.scrollHeight;
+    const botMsgDiv = document.createElement('div');
+    botMsgDiv.classList.add('message', 'bot');
+    botMsgDiv.innerText = '';
+    chatWindow.appendChild(botMsgDiv);
+    chatWindow.scrollTop = chatWindow.scrollHeight;
 
-      try {
-        const res = await fetch('/chat', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ question })
-        });
+    // Track if any text was added
+    let receivedAnyContent = false;
 
-        const reader = res.body.getReader();
-        const decoder = new TextDecoder('utf-8');
-        let done = false;
+    // AbortController for cancel support
+    controller = new AbortController();
+    const signal = controller.signal;
 
-        while (!done) {
-          const { value, done: doneReading } = await reader.read();
-          done = doneReading;
+    cancelButton.style.display = 'inline';
+    cancelButton.disabled = false;
+    cancelButton.innerText = 'Cancel';
 
-          if (value) {
-            var chunk = decoder.decode(value);
+    cancelButton.onclick = () => {
+      if (controller) {
+        controller.abort();
+        cancelButton.disabled = true;
+        cancelButton.innerText = 'Canceled';
+      }
+    };
 
-            if (chunk.endsWith('\n\n')) {
-                  chunk = chunk.slice(0, -2);  // remove last 2 chars
-            }
+    try {
+      const res = await fetch('/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ question }),
+        signal
+      });
 
-            if (chunk.startsWith('data: ')) {
-                chunk = chunk.replace('data: ', '')
-            }
-            botMsgDiv.innerText += chunk
-            chatWindow.scrollTop = chatWindow.scrollHeight;
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let done = false;
 
+      while (!done) {
+        const { value, done: doneReading } = await reader.read();
+        done = doneReading;
+
+        if (value) {
+          let chunk = decoder.decode(value);
+
+          if (chunk.endsWith('\n\n')) {
+            chunk = chunk.slice(0, -2);
           }
+
+          if (chunk.startsWith('data: ')) {
+            chunk = chunk.replace('data: ', '');
+          }
+
+          botMsgDiv.innerText += chunk;
+          receivedAnyContent = true;
+          chatWindow.scrollTop = chatWindow.scrollHeight;
         }
-      } catch (err) {
+      }
+
+    } catch (err) {
+      if (err.name === 'AbortError') {
+        if (!receivedAnyContent) {
+          botMsgDiv.remove(); // Remove empty bubble if nothing was streamed
+        } else {
+          botMsgDiv.innerText += '\n[Stream canceled]';
+        }
+      } else {
         botMsgDiv.innerText = 'Error connecting to server.';
       }
-    });
+    } finally {
+      cancelButton.style.display = 'none';
+      cancelButton.innerText = 'Cancel';
+    }
+  });
+</script>
 
-  </script>
 {% endblock %}
 </body>
-

@@ -33,6 +33,7 @@ Note: all the links are for windows systems
 
 ```bash
 pip install -r requirements.txt
+python -c "import stanza; stanza.download('en')"
 ```
 
 ---

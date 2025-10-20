@@ -59,26 +59,33 @@ def chat():
     prompt = MAIN_MODEL.build_conversation_prompt(question, context, conversation_history=convo)
 
     def generate():
-        response_accum = ""
-        latest_chunk = ""
-        token_buffer = ""
-        token_count = 0
-        # Wrap receive_chunk in a generator pattern
-        for chunk in MAIN_MODEL.generate_response(prompt, logger=LOGGER):
-            chunk = str(chunk)
-            response_accum += chunk
-            token_count += len(chunk)
-            token_buffer += chunk
+        try:
+            response_accum = ""
+            latest_chunk = ""
+            token_buffer = ""
+            token_count = 0
+            # Wrap receive_chunk in a generator pattern
+            for chunk in MAIN_MODEL.generate_response(prompt, logger=LOGGER):
+                chunk = str(chunk)
+                response_accum += chunk
+                token_count += len(chunk)
+                token_buffer += chunk
 
-            # LOGGER.debug(repr(chunk))
-            if token_count > 10:
-                yield f"data: {token_buffer}\n\n"
-                token_buffer = ''
-                token_count = 0
+                # LOGGER.debug(repr(chunk))
+                if token_count > 10:
+                    yield f"data: {token_buffer}\n\n"
+                    token_buffer = ''
+                    token_count = 0
 
-        yield f"data: {token_buffer}\n\n"
+            yield f"data: {token_buffer}\n\n"
 
-        convo.add(question=question, response=response_accum)
+            if len(response_accum) == 0:
+                LOGGER.warning(f"LLM gave blank response for question: '{question}'")
+                return
+
+            convo.add(question=question, response=response_accum)
+        except GeneratorExit:
+            LOGGER.info(f"Generator exit for user {session['username']}")
 
     return Response(stream_with_context(generate()), mimetype='text/event-stream')
 

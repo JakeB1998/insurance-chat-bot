@@ -25,14 +25,15 @@ LOGGER = logging.getLogger(__name__)
 
 APP_STATIC_CONFIG_DIR_FP = f"{os.getcwd()}{os.path.sep}app{os.path.sep}static{os.path.sep}config{os.path.sep}"
 
-CRASH_SYSTEM_CTX = load_from_file(f"{APP_STATIC_CONFIG_DIR_FP}crash-context.txt")
+LLM_SYSTEM_CTX_MSG = load_from_file(f"{APP_STATIC_CONFIG_DIR_FP}general-context.txt")
+LLM_CRASH_SYSTEM_CTX_MSG = load_from_file(f"{APP_STATIC_CONFIG_DIR_FP}crash-context.txt")
 CRASH_USER_TEMPLATE = load_from_file(f"{APP_STATIC_CONFIG_DIR_FP}crash-user-context-template.txt")
 RESPONSE_LLM_FORMATTING_TEMPLATE = load_from_file(f"{APP_STATIC_CONFIG_DIR_FP}response-formatting-template.txt")
 
 # CRASH_SYSTEM_CTX += "\n\n" + RESPONSE_LLM_FORMATTING_TEMPLATE
 
 # MAIN_MODEL = create_model(system_context=CRASH_SYSTEM_CTX, config=ModelConfig(model_name="Qwen2.5-3B-IQ3_M", model_file="Qwen2.5-3B-IQ3_M.gguf"))
-MAIN_MODEL = create_model(system_context=CRASH_SYSTEM_CTX, config=ModelConfig())
+MAIN_MODEL = create_model(system_context=LLM_SYSTEM_CTX_MSG, config=ModelConfig())
 MAIN_MODEL.load_model()
 
 USER_LLM_CONVO_MAP = {}
