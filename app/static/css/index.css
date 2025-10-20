@@ -91,3 +91,35 @@ body {
 #chat-form button:hover {
   background-color: #e31837;
 }
+
+
+.message.bot.question {
+  background-color: #eef4ff;
+  border-left: 4px solid #3366cc;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.question-text {
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.choice-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.choice-button {
+  padding: 8px 12px;
+  border: 1px solid #aaa;
+  background-color: #f7f7f7;
+  border-radius: 4px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.choice-button:hover {
+  background-color: #e6f0ff;
+}

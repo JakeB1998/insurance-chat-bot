@@ -1,4 +1,4 @@
-
+import json
 
 from flask import Blueprint, jsonify, render_template, request, redirect, url_for, session, stream_with_context, \
     Response
@@ -60,6 +60,10 @@ def chat():
 
     def generate():
         try:
+            # Example:
+          #           yield f"data: {json.dumps({  'type': 'question',
+          # 'content': 'Do you want you agent (Fred Kunnigham) to call you?',
+          # 'choices': ['yes', 'no']})}\n\n"
             response_accum = ""
             latest_chunk = ""
             token_buffer = ""
@@ -73,11 +77,11 @@ def chat():
 
                 # LOGGER.debug(repr(chunk))
                 if token_count > 10:
-                    yield f"data: {token_buffer}\n\n"
+                    yield f"data: {json.dumps({'content': token_buffer, 'type': 'text'})}\n\n"
                     token_buffer = ''
                     token_count = 0
 
-            yield f"data: {token_buffer}\n\n"
+            yield f"data: {json.dumps({'content': token_buffer, 'type': 'text'})}\n\n"
 
             if len(response_accum) == 0:
                 LOGGER.warning(f"LLM gave blank response for question: '{question}'")
