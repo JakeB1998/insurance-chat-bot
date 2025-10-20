@@ -6,6 +6,8 @@ from flask import redirect, session, url_for, request
 
 from app.llm.llm_config import ModelConfig
 from app.llm.llm_model_factory import create_model
+from app.session_ctx import SessionContext
+from app.user_context import UserContext
 from app.utils.file_utils import load_from_file
 
 logging.basicConfig(
@@ -33,11 +35,15 @@ MAIN_MODEL = create_model(system_context=CRASH_SYSTEM_CTX, config=ModelConfig())
 MAIN_MODEL.load_model()
 
 USER_LLM_CONVO_MAP = {}
+SESSION_CONTEXT_MAP = {}
 
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'username' not in session:
             return redirect(url_for('login_r.login', next=request.url))
+
+        if not SESSION_CONTEXT_MAP.get(session['username']):
+            SESSION_CONTEXT_MAP.update({session['username']: SessionContext(user_ctx=UserContext(user_name=session['username']))})
         return f(*args, **kwargs)
     return decorated_function

@@ -4,7 +4,7 @@ from flask import Blueprint, jsonify, render_template, request, redirect, url_fo
     Response
 
 from app.config.app_vars import MAIN_MODEL, LOGGER, USER_LLM_CONVO_MAP, login_required, CRASH_USER_TEMPLATE, \
-    RESPONSE_LLM_FORMATTING_TEMPLATE, APP_STATIC_CONFIG_DIR_FP
+    RESPONSE_LLM_FORMATTING_TEMPLATE, APP_STATIC_CONFIG_DIR_FP, SESSION_CONTEXT_MAP
 from app.llm.llm_conversation_ctx import LLMConversationCTX
 from app.utils.llm_context_template_utils import apply_user_template
 
@@ -24,6 +24,8 @@ def index():
 def chat():
     data = request.get_json()
     question = data.get('question')
+
+    session_context = SESSION_CONTEXT_MAP.get(session["username"])
 
     if not question:
         return jsonify({'error': 'Missing question'}), 400
