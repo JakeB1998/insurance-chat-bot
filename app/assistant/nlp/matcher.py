@@ -1,4 +1,4 @@
-def token_matches(stanza_word, pattern_token):
+def token_matches(stanza_word, pattern_token: Dict[str, str]):
     for attr, value in pattern_token.items():
         # Get attribute from stanza Word object
         token_value = getattr(stanza_word, attr.lower(), None)
@@ -10,21 +10,22 @@ def token_matches(stanza_word, pattern_token):
 
 
 
-def match_patterns(doc, patterns):
+def match_patterns(doc, patterns: List[List[Dict[str, str]]]):
     matches = []
     # Flatten all words in the doc into a list
     words = [word for sent in doc.sentences for word in sent.words]
 
     for pattern in patterns:
+        # pattern: List[dict]
         plen = len(pattern)
         for i in range(len(words) - plen + 1):
-            window = words[i:i+plen]
+            window: list = words[i:i+plen]
             if all(token_matches(w, pt) for w, pt in zip(window, pattern)):
                 matched_text = " ".join(w.text for w in window)
                 matches.append((matched_text, i, i+plen))
     return matches
 
-def get_intent(doc, pattern_map):
+def get_intent(doc, pattern_map: Dict[str, List[List[Dict[str, str]]]]):
     # Flatten all words in the doc into a list
     words = [word for sent in doc.sentences for word in sent.words]
 
