@@ -1,14 +1,16 @@
-def token_matches(stanza_word, pattern_token: Dict[str, str]):
-    for attr, value in pattern_token.items():
-        # Get attribute from stanza Word object
-        token_value = getattr(stanza_word, attr.lower(), None)
-        if token_value is None:
-            return False
-        if token_value.lower() != value.lower():
-            return False
-    return True
+from typing import Dict, List
 
 
+
+
+def does_pattern_match(words: List[str], pattern: List[Dict[str, str]]):
+    # pattern: List[dict]
+    plen = len(pattern)
+    for i in range(len(words) - plen + 1):
+        window: list = words[i:i+plen]
+        if all(token_matches(w, pt) for w, pt in zip(window, pattern)):
+            return True
+    return False
 
 def match_patterns(doc, patterns: List[List[Dict[str, str]]]):
     matches = []
@@ -31,8 +33,17 @@ def get_intent(doc, pattern_map: Dict[str, List[List[Dict[str, str]]]]):
 
     for intent, patterns in pattern_map.items():
         for pattern in patterns:
-            plen = len(pattern)
-            for i in range(len(words) - plen + 1):
-                window = words[i:i+plen]
-                if all(token_matches(w, pt) for w, pt in zip(window, pattern)):
-                    return intent
+            if does_pattern_match(words, pattern):
+                return intent
+
+
+
+def token_matches(stanza_word, pattern_token: Dict[str, str]):
+    for attr, value in pattern_token.items():
+        # Get attribute from stanza Word object
+        token_value = getattr(stanza_word, attr.lower(), None)
+        if token_value is None:
+            return False
+        if token_value.lower() != value.lower():
+            return False
+    return True
