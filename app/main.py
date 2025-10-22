@@ -15,6 +15,7 @@ app.secret_key = os.urandom(24)
 app.register_blueprint(main_r)
 app.register_blueprint(login_r)
 
+
 @app.before_request
 def log_request():
     LOGGER.info(f"Incoming Request: {request.method} {request.path} - {request.remote_addr}")
@@ -34,7 +35,7 @@ def log_response(response):
 if __name__ == '__main__':
     LOGGER.info("Starting app")
 
-    expose = True
+    expose = bool(os.environ.get("EXPOSE", False))
     kwargs = {}
 
     if expose:

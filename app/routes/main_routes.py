@@ -1,9 +1,11 @@
 import json
+from typing import List
 
 from flask import Blueprint, jsonify, render_template, request, redirect, url_for, session, stream_with_context, \
     Response
 
 from app.Response import ResponseInteractiveCTX
+from app.assistant.actions.action import PrintAction
 from app.assistant.intent import IntentTypes
 from app.assistant.nlp.matcher import match_patterns, get_intent
 from app.assistant.nlp.nlp_config import NLPConfig, PATTERNS, PATTERNS_MAP
@@ -11,12 +13,13 @@ from app.assistant.nlp.nlp_context import NLPContext
 from app.config.app_vars import MAIN_MODEL, LOGGER, USER_LLM_CONVO_MAP, login_required, CRASH_USER_TEMPLATE, \
     RESPONSE_LLM_FORMATTING_TEMPLATE, APP_STATIC_CONFIG_DIR_FP, SESSION_CONTEXT_MAP, NPL_MODEL_CTX
 from app.llm.llm_conversation_ctx import LLMConversationCTX
-from app.question import YesNoQuestion
+from app.question import YesNoQuestion, InteractiveQuestion
 from app.session_ctx import SessionContext
 from app.utils.llm_context_template_utils import apply_user_template
 
 main_r = Blueprint('main_r', __name__)
 
+PENDING_INTERACTIVE_MAP = {}
 
 
 @main_r.route('/')
@@ -26,17 +29,57 @@ def index():
 
 
 
+@main_r.route('/answer', methods=['POST'])
+@login_required
+def answer_interactive():
+    if not request.is_json:
+        return jsonify({"error": "Request must be JSON"}), 400
+
+    session_context: SessionContext = SESSION_CONTEXT_MAP.get(session["username"])
+
+    data = request.get_json()
+    question_id = data.get("question_id")
+    answer = data.get("answer")
+
+    pending_interactives: List[InteractiveQuestion] = PENDING_INTERACTIVE_MAP.get(session_context.user_ctx.user_name)
+
+    if not isinstance(pending_interactives, list):
+        LOGGER.info(f"Interactive question {question_id} is not an interactive question for user {session_context.user_ctx.user_name}")
+        return jsonify({"error": f"Interactive question {question_id} is not an interactive question for user {session_context.user_ctx.user_name}"}), 400
+
+    if len(pending_interactives) == 0:
+        LOGGER.info("No pending interactive questions")
+        return jsonify({"error": "No pending interactive questions"}), 400
+
+    has_pending = question_id in pending_interactives
+
+    if not has_pending:
+        LOGGER.info(f"No pending interactive questions with id {question_id}")
+        return jsonify({"error": f"No pending interactive questions with id {question_id}"}), 400
+
+    interactive_question: InteractiveQuestion = pending_interactives[pending_interactives.index(question_id)]
+
+    if interactive_question is None:
+        LOGGER.info(f"No pending interactive questions with id {question_id}")
+        return jsonify({"error": f"No pending interactive questions with id {question_id}"}), 400
+
+    interactive_question.submit_answer(answer)
+
+    pending_interactives.remove(interactive_question)
+
+    return jsonify({"status": 200})
+
+
 @main_r.route('/chat', methods=['POST'])
 @login_required
 def chat():
+    if not request.is_json:
+        return jsonify({"error": "Request must be JSON"}), 400
+
     data = request.get_json()
     question = data.get('question')
 
     session_context: SessionContext = SESSION_CONTEXT_MAP.get(session["username"])
-
-
-
-
 
     if not question:
         return jsonify({'error': 'Missing question'}), 400
@@ -75,19 +118,26 @@ def chat():
             if intent == IntentTypes.GET_AGENT:
                 interactive_ctx = ResponseInteractiveCTX(content="Do you want your agent to call you?",
                                                             response_type="question",
-                                                            interactive_question=YesNoQuestion(question_content="Do you want your agent to call you?"))
+                                                            interactive_question=YesNoQuestion(question_content="Do you want your agent to call you?", action = PrintAction(action_args=["arg1", "arg2"], action_kwargs={"kwarg1": "kwarg2"}, logger=LOGGER)))
             elif intent == IntentTypes.GET_CLAIM:
                 interactive_ctx  = ResponseInteractiveCTX(content="Do you want to get a claim?",
                                                             response_type="question",
-                                                            interactive_question=YesNoQuestion(question_content="Do you want to get a claim?"))
+                                                            interactive_question=YesNoQuestion(question_content="Do you want to get a claim?",  action = PrintAction(action_args=["arg3", "arg4"], action_kwargs={"kwarg1": "kwarg2"})))
             elif intent == IntentTypes.FILE_CLAIM:
                 interactive_ctx = ResponseInteractiveCTX(content="Do you want to file a claim?",
                                                             response_type="question",
-                                                            interactive_question=YesNoQuestion(question_content="Do you want to file a claim?"))
+                                                            interactive_question=YesNoQuestion(question_content="Do you want to file a claim?",  action = PrintAction(action_args=["arg5", "arg6"], action_kwargs={"kwarg1": "kwarg2"})))
 
 
             if isinstance(interactive_ctx, ResponseInteractiveCTX):
-                yield f"data: {json.dumps(interactive_ctx .to_dict())}\n\n"
+                yield f"data: {json.dumps(interactive_ctx.to_dict())}\n\n"
+                interactive_questions = PENDING_INTERACTIVE_MAP.get(session_context.user_ctx.user_name)
+
+                if not isinstance(interactive_questions, list):
+                    interactive_questions = []
+                    PENDING_INTERACTIVE_MAP.update({session_context.user_ctx.user_name: interactive_questions})
+
+                interactive_questions.append(interactive_ctx.interactive_question)
                 return
 
             # Wrap receive_chunk in a generator pattern

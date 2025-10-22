@@ -11,6 +11,7 @@ PATTERNS_MAP = {
         [{"LEMMA": "file"}, {"LEMMA": "a"}, {"LEMMA": "claim"}],
         [{"LEMMA": "report"}, {"LEMMA": "damage"}],
         [{"LEMMA": "submit"}, {"LEMMA": "claim"}],
+        [{"LEMMA": "file"}, {"LEMMA": "claim"}],
     ],
     IntentTypes.GET_CLAIM: [
         [{"LEMMA": "get"}, {"LEMMA": "claim"}],

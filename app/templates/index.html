@@ -107,6 +107,7 @@
                 botMsgDiv.innerText += data.content;
               } else if (data.type === 'question') {
                 botMsgDiv.classList.add('question');
+                botMsgDiv.id = data.question_id
 
                 // Create and add question text
                 const questionText = document.createElement('div');
@@ -117,9 +118,11 @@
                 // Create form for choices
                 const choiceForm = document.createElement('div');
                 choiceForm.className = 'choice-form';
+                let buttons = []
 
                 data.choices.forEach(choice => {
                   const button = document.createElement('button');
+                  buttons.push(button)
                   button.className = 'choice-button';
 
                   if (choice) {
@@ -134,6 +137,30 @@
                     // form.dispatchEvent(new Event('submit'));
                     // botMsgDiv.classList.remove('question');
                     // choiceForm.remove(); // remove form after answer
+                      fetch('/answer', {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ "question_id": data.question_id, "answer": choice }),
+                        signal
+                      }).then(response => {
+                          if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                          }
+                          button.style.color = "green"
+                          buttons.forEach((btn) => {
+                              btn.disabled = true
+                          })
+
+                          return response.json();  // or response.text(), etc.
+                        })
+                        .then(data => {
+                          console.log('Response data:', data);
+                        })
+                        .catch(error => {
+                          console.error('Fetch error:', error);
+                        });
                   };
 
                   choiceForm.appendChild(button);
