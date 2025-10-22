@@ -27,7 +27,7 @@ class Question:
 class InteractiveQuestion(Question):
     def __init__(self, question_content: str, question_type: str = QuestionTypes.INTERACTIVE, answered: bool = False, answer: Any = None, action: Action = None):
         super().__init__(question_content=question_content, question_type=question_type, answered=answered, answer=answer)
-        self.action = action
+        self.action: Action = action
 
     def to_dict(self):
         return {

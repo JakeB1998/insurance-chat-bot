@@ -21,12 +21,9 @@ class Action:
         if self.action_kwargs is None:
             self.action_kwargs = {}
 
-
-
-
-        @abstractmethod
-        def do_action(self):
-            pass
+    @abstractmethod
+    def do_action(self):
+        pass
 
 class PrintAction(Action):
     def __init__(self, action_id: str = None, name: str = None, action_args: List[str] = None, action_kwargs: Dict[str, Any] = None, logger = None):

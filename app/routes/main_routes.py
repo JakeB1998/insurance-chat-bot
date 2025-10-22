@@ -65,6 +65,9 @@ def answer_interactive():
 
     interactive_question.submit_answer(answer)
 
+    if interactive_question.action is not None:
+        interactive_question.action.do_action(*interactive_question.action.action_args, **interactive_question.action.action_kwargs)
+
     pending_interactives.remove(interactive_question)
 
     return jsonify({"status": 200})
