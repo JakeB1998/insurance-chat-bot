@@ -1,5 +1,5 @@
 import json
-from typing import List
+from typing import List, Optional
 
 from flask import Blueprint, jsonify, render_template, request, redirect, url_for, session, stream_with_context, \
     Response
@@ -7,13 +7,12 @@ from flask import Blueprint, jsonify, render_template, request, redirect, url_fo
 from app.Response import ResponseInteractiveCTX
 from app.assistant.actions.action import PrintAction
 from app.assistant.intent import IntentTypes
-from app.assistant.nlp.matcher import match_patterns, get_intent
-from app.assistant.nlp.nlp_config import NLPConfig, PATTERNS, PATTERNS_MAP
+from app.assistant.nlp.matcher import get_intent
 from app.assistant.nlp.nlp_context import NLPContext
 from app.config.app_vars import MAIN_MODEL, LOGGER, USER_LLM_CONVO_MAP, login_required, CRASH_USER_TEMPLATE, \
-    RESPONSE_LLM_FORMATTING_TEMPLATE, APP_STATIC_CONFIG_DIR_FP, SESSION_CONTEXT_MAP, NPL_MODEL_CTX
+    RESPONSE_LLM_FORMATTING_TEMPLATE, APP_STATIC_CONFIG_DIR_FP, SESSION_CONTEXT_MAP, NPL_MODEL_CTX, PATTERNS_MAP
 from app.llm.llm_conversation_ctx import LLMConversationCTX
-from app.question import YesNoQuestion, InteractiveQuestion
+from app.question import YesNoQuestion, InteractiveQuestion, MultipleChoiceQuestion
 from app.session_ctx import SessionContext
 from app.utils.llm_context_template_utils import apply_user_template
 
@@ -21,6 +20,40 @@ main_r = Blueprint('main_r', __name__)
 
 PENDING_INTERACTIVE_MAP = {}
 
+
+def __handle_intent(intent) -> Optional[ResponseInteractiveCTX]:
+    interactive_ctx: ResponseInteractiveCTX = None
+    question = None
+    action_map = {}
+
+    if intent == IntentTypes.GET_AGENT:
+        interactive_ctx = ResponseInteractiveCTX(content="Do you want your agent to call you?",
+                                                 response_type="question")
+        question = YesNoQuestion(question_content=interactive_ctx.content)
+        action_map = {"yes": PrintAction(action_args=[f"The user wants their agent to call them"]),
+                   "no": PrintAction(action_args=[f"The user does not their agent to call them"])}
+
+
+    elif intent == IntentTypes.GET_CLAIM:
+        interactive_ctx = ResponseInteractiveCTX(content="Do you want to get a claim?",
+                                                 response_type="question")
+        question = YesNoQuestion(question_content=interactive_ctx.content)
+        action_map = {"yes": PrintAction(action_args=[f"The user wants tyo get a claim"]),
+                   "no": PrintAction(action_args=[f"The user does not want to get a claimm"])}
+
+    elif intent == IntentTypes.FILE_CLAIM:
+        interactive_ctx = ResponseInteractiveCTX(content="Do you want to file a claim?",
+                                                 response_type="question")
+        question = YesNoQuestion(question_content=interactive_ctx.content)
+        action_map = {"yes": PrintAction(action_args=[f"The user wants file a claim"]),
+                   "no": PrintAction(action_args=[f"The user does not want to file a claim"])}
+
+    for k, v in action_map.items():
+        question.register_choice(choice=k, action=v)
+
+    interactive_ctx.interactive_question = question
+
+    return interactive_ctx
 
 @main_r.route('/')
 @login_required
@@ -40,6 +73,10 @@ def answer_interactive():
     data = request.get_json()
     question_id = data.get("question_id")
     answer = data.get("answer")
+
+    if isinstance(answer, str):
+        answer = answer.strip()
+        answer = answer.lower()
 
     pending_interactives: List[InteractiveQuestion] = PENDING_INTERACTIVE_MAP.get(session_context.user_ctx.user_name)
 
@@ -65,8 +102,17 @@ def answer_interactive():
 
     interactive_question.submit_answer(answer)
 
-    if interactive_question.action is not None:
-        interactive_question.action.do_action(*interactive_question.action.action_args, **interactive_question.action.action_kwargs)
+    actions = []
+
+    if isinstance(interactive_question, InteractiveQuestion) and not isinstance(interactive_question, MultipleChoiceQuestion):
+        if interactive_question.get_actions() is not None:
+            actions = interactive_question.get_actions()
+            interactive_question.action.do_action(*interactive_question.action.action_args, **interactive_question.action.action_kwargs)
+    elif isinstance(interactive_question, MultipleChoiceQuestion):
+        actions = interactive_question.get_actions_from_choice(answer)
+
+    for action in actions:
+        action.do_action(*action.action_args, **action.action_kwargs)
 
     pending_interactives.remove(interactive_question)
 
@@ -89,12 +135,8 @@ def chat():
 
     nlp_ctx = NPL_MODEL_CTX
     doc = nlp_ctx(question)
-    matches = match_patterns(doc, PATTERNS)
 
-    for matched_text, start, end in matches:
-        LOGGER.info(f"Matched: '{matched_text}' at tokens {start}-{end - 1}")
-
-    intent = get_intent(doc, PATTERNS_MAP)
+    intent = get_intent(doc, PATTERNS_MAP, distance=1)
 
     convo: LLMConversationCTX = USER_LLM_CONVO_MAP.get(session['username'])
 
@@ -116,21 +158,7 @@ def chat():
             token_buffer = ""
             token_count = 0
 
-            interactive_ctx = None
-
-            if intent == IntentTypes.GET_AGENT:
-                interactive_ctx = ResponseInteractiveCTX(content="Do you want your agent to call you?",
-                                                            response_type="question",
-                                                            interactive_question=YesNoQuestion(question_content="Do you want your agent to call you?", action = PrintAction(action_args=["arg1", "arg2"], action_kwargs={"kwarg1": "kwarg2"}, logger=LOGGER)))
-            elif intent == IntentTypes.GET_CLAIM:
-                interactive_ctx  = ResponseInteractiveCTX(content="Do you want to get a claim?",
-                                                            response_type="question",
-                                                            interactive_question=YesNoQuestion(question_content="Do you want to get a claim?",  action = PrintAction(action_args=["arg3", "arg4"], action_kwargs={"kwarg1": "kwarg2"})))
-            elif intent == IntentTypes.FILE_CLAIM:
-                interactive_ctx = ResponseInteractiveCTX(content="Do you want to file a claim?",
-                                                            response_type="question",
-                                                            interactive_question=YesNoQuestion(question_content="Do you want to file a claim?",  action = PrintAction(action_args=["arg5", "arg6"], action_kwargs={"kwarg1": "kwarg2"})))
-
+            interactive_ctx = __handle_intent(intent)
 
             if isinstance(interactive_ctx, ResponseInteractiveCTX):
                 yield f"data: {json.dumps(interactive_ctx.to_dict())}\n\n"

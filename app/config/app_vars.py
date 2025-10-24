@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 from functools import wraps
@@ -38,6 +39,11 @@ MAIN_MODEL.load_model()
 
 USER_LLM_CONVO_MAP = {}
 SESSION_CONTEXT_MAP = {}
+
+
+
+with open(f"{APP_STATIC_CONFIG_DIR_FP}nlp{os.path.sep}nlp-patterns-config.json", "r") as fp:
+    PATTERNS_MAP = json.load(fp)
 
 NPL_MODEL_CTX = NLPContext()
 

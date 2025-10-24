@@ -4,47 +4,48 @@ from stanza import Document
 from stanza.models.common.doc import Word
 
 
-def does_pattern_match(words: List[Word], pattern: List[Dict[str, str]]):
-    # pattern: List[dict]
+def does_pattern_match(words: List['Word'], pattern: List[Dict[str, str]], distance: int = 0):
+    """
+    Returns True if the sequence of pattern tokens matches the words list,
+    allowing up to `distance` non-matching words between matched tokens.
+    """
     plen = len(pattern)
-    # How many words in the pattern
-    for i in range(len(words) - plen + 1):
-        # Gets a window of words the size of the pattern that slides.
-        window: list = words[i:i+plen]
+    wlen = len(words)
 
-        # Zip matches each stanza word object to each word instance in the pattern
-        # Then iterates the pairs passing them to check if they equal eachother.
-        if all(token_matches(w, pt) for w, pt in zip(window, pattern)):
+    for i in range(wlen):
+        # Start matching pattern from words[i]
+        wi = i  # current word index
+        matched = True
+
+        for p in pattern:
+            # Move forward until we find a match or exceed allowed distance
+            found = False
+            for skip in range(distance + 1):
+                if wi + skip >= wlen:
+                    matched = False
+                    break
+                if token_matches(words[wi + skip], p):
+                    wi = wi + skip + 1  # move past the matched word
+                    found = True
+                    break
+            if not found:
+                matched = False
+                break
+
+        if matched:
             return True
+
     return False
 
-def match_patterns(doc: Document, patterns: List[List[Dict[str, str]]]):
-    matches = []
-    # Flatten all words in the doc into a list
-    words: List[Word] = [word for sent in doc.sentences for word in sent.words]
 
-    for pattern in patterns:
-        # Pattern is a list of kew pair values (key: stanza augment, value: word to look for)
-        plen = len(pattern)
-        for i in range(len(words) - plen + 1):
-            # Gets a window of words the size of the pattern that slides.
-            window: list = words[i:i+plen]
-
-            # Zip matches each stanza word object to each word instance in the pattern
-            # Then iterates the pairs passing them to check if they equal eachother.
-            if all(token_matches(w, pt) for w, pt in zip(window, pattern)):
-                matched_text = " ".join(w.text for w in window)
-                matches.append((matched_text, i, i+plen))
-    return matches
-
-def get_intent(doc, pattern_map: Dict[str, List[List[Dict[str, str]]]]):
+def get_intent(doc, pattern_map: Dict[str, List[List[Dict[str, str]]]], distance: int = 0):
     # Flatten all words in the doc into a list
     words: List[Word] = [word for sent in doc.sentences for word in sent.words]
 
     for intent, patterns in pattern_map.items():
         for pattern in patterns:
             # Pattern is a list of kew pair values (key: stanza augment, value: word to look for)
-            if does_pattern_match(words, pattern):
+            if does_pattern_match(words, pattern, distance=distance):
                 return intent
 
 

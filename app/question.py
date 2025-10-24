@@ -1,5 +1,6 @@
+import logging
 import uuid
-from typing import List, Any
+from typing import List, Any, Dict
 
 from app.assistant.actions.action import Action
 
@@ -27,7 +28,13 @@ class Question:
 class InteractiveQuestion(Question):
     def __init__(self, question_content: str, question_type: str = QuestionTypes.INTERACTIVE, answered: bool = False, answer: Any = None, action: Action = None):
         super().__init__(question_content=question_content, question_type=question_type, answered=answered, answer=answer)
-        self.action: Action = action
+        self.choice_action_map = {}
+        self.__action: Action = action
+
+
+    def get_actions(self) -> List[Action]:
+        return [self.__action] if self.__action is not None else None
+
 
     def to_dict(self):
         return {
@@ -57,10 +64,47 @@ class InteractiveQuestion(Question):
 
 
 class MultipleChoiceQuestion(InteractiveQuestion):
-    def __init__(self, question_content: str, choices: List[str],  question_type: str = QuestionTypes.MULTI_CHOICE, answered: bool = False, answer: Any = None, action: Action = None):
+    def __init__(self, question_content: str, choices: List[str],  question_type: str = QuestionTypes.MULTI_CHOICE, answered: bool = False, answer: Any = None, action: Action = None, logger = None):
         super().__init__(question_content=question_content, question_type=question_type, answered=answered, action = action)
         self.choices = choices
+        self.choice_action_map: Dict[str, List[Action]] = {}
+        self.__logger = logger if logger else logging.getLogger(__name__)
 
+        if not isinstance(self.choices, list):
+            raise TypeError("Choices must be a list")
+
+
+    def get_actions(self) -> List[Action]:
+        return self.choice_action_map.values() if self.choice_action_map is not None else None
+
+
+    def get_actions_from_choice(self, choice):
+        if isinstance(self.choice_action_map, dict):
+            if choice in self.choice_action_map:
+                return [self.choice_action_map[choice]]
+        return None
+
+    def register_choice(self, choice, action = None):
+        if choice is None:
+            raise ValueError("Choice cannot be None")
+
+        if choice not in self.choices:
+            self.choice_action_map[choice] = []
+
+        self.choice_action_map.update({choice: action})
+
+    def register_action(self, choice, action, add_choice: bool = False, logger = None):
+        if logger is None:
+            logger = self.__logger
+
+        if choice not in self.choices:
+            if not add_choice:
+                logger.warning(f"Cannot add action for choice {str(choice)} as it is not registered")
+                return False
+
+        self.choice_action_map.update({choice: action})
+
+        return True
     def to_dict(self):
         ret = super().to_dict()
         ret.update({"choices": self.choices})
