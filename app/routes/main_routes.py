@@ -1,4 +1,5 @@
 import json
+import time
 from typing import List, Optional
 
 from flask import Blueprint, jsonify, render_template, request, redirect, url_for, session, stream_with_context, \
@@ -8,7 +9,7 @@ from stanza import Document
 from app.Response import ResponseInteractiveCTX
 from app.assistant.actions.action import PrintAction
 from app.assistant.intent import IntentTypes
-from app.assistant.nlp.matcher import get_intent
+from app.assistant.nlp.matcher import Match, MatchedIntent, get_intents
 from app.assistant.nlp.nlp_context import NLPContext
 from app.config.app_vars import MAIN_MODEL, LOGGER, USER_LLM_CONVO_MAP, login_required, CRASH_USER_TEMPLATE, \
     RESPONSE_LLM_FORMATTING_TEMPLATE, APP_STATIC_CONFIG_DIR_FP, SESSION_CONTEXT_MAP, NPL_MODEL_CTX, PATTERNS_MAP
@@ -16,15 +17,15 @@ from app.llm.llm_conversation_ctx import LLMConversationCTX
 from app.question import YesNoQuestion, InteractiveQuestion, MultipleChoiceQuestion
 from app.session_ctx import SessionContext
 from app.utils.llm_context_template_utils import apply_user_template
-from app.utils.nlp_utils import get_subject
+from app.utils.nlp_utils import get_subject, get_subject_in_sentence
 
 main_r = Blueprint('main_r', __name__)
 
 PENDING_INTERACTIVE_MAP = {}
 
 
-def __handle_intent(doc: Document, intent) -> Optional[ResponseInteractiveCTX]:
-    interactive_ctx: ResponseInteractiveCTX = None
+def __handle_intent(doc: Document, intent, match_ctx: Match) -> Optional[ResponseInteractiveCTX]:
+    interactive_ctxs: ResponseInteractiveCTX = None
     question = None
     action_map = {}
 
@@ -49,7 +50,7 @@ def __handle_intent(doc: Document, intent) -> Optional[ResponseInteractiveCTX]:
 
         question = YesNoQuestion(question_content=interactive_ctx.content)
 
-        subject = get_subject(doc=doc, verb="get", translation_map={"i": "user"})
+        subject = get_subject_in_sentence(sentence=match_ctx.sentence, verb="get", translation_map={"i": "user"})
 
         if subject is None:
             subject = "user"
@@ -161,38 +162,50 @@ def chat():
     nlp_ctx = NPL_MODEL_CTX
     doc: Document = nlp_ctx(question)
 
-    intent = get_intent(doc, PATTERNS_MAP)
-
-    convo: LLMConversationCTX = USER_LLM_CONVO_MAP.get(session['username'])
-
-    if MAIN_MODEL is None:
-        return jsonify({'error': 'LLM Model not found'}), 404
-
-    context = apply_user_template(CRASH_USER_TEMPLATE, session["username"])
-
-    with open(f"{APP_STATIC_CONFIG_DIR_FP}example-sf-policy.json", 'r') as f:
-        context += "\n\n\nAnything to do with the customers policy, refer to their policy in JSON format: \n\n" + f.read()
-    prompt = MAIN_MODEL.build_conversation_prompt(question, context, conversation_history=convo)
+    matched_intents: List[MatchedIntent] = get_intents(doc, PATTERNS_MAP)
 
     def generate():
         try:
+            for i, matched_intent in enumerate(matched_intents):
+                interactive_ctx = __handle_intent(doc, matched_intent.intent, match_ctx=matched_intent)
+
+                if isinstance(interactive_ctx, ResponseInteractiveCTX):
+                    yield f"data: {json.dumps(interactive_ctx.to_dict())}\n\n"
+
+                    if i + 1 < len(matched_intents):
+                        # To fix a wierd streaming bug
+                        time.sleep(0.25)
+
+                    LOGGER.debug(f"Sent interactive question steam data  {json.dumps(interactive_ctx.to_dict())}")
+
+                    interactive_questions = PENDING_INTERACTIVE_MAP.get(session_context.user_ctx.user_name)
+
+                    if not isinstance(interactive_questions, list):
+                        interactive_questions = []
+                        PENDING_INTERACTIVE_MAP.update({session_context.user_ctx.user_name: interactive_questions})
+
+                    interactive_questions.append(interactive_ctx.interactive_question)
+
+            if len(matched_intents) > 0:
+                return
+
             content = ""
 
             token_buffer = ""
             token_count = 0
 
-            interactive_ctx = __handle_intent(doc, intent)
 
-            if isinstance(interactive_ctx, ResponseInteractiveCTX):
-                yield f"data: {json.dumps(interactive_ctx.to_dict())}\n\n"
-                interactive_questions = PENDING_INTERACTIVE_MAP.get(session_context.user_ctx.user_name)
+            convo: LLMConversationCTX = USER_LLM_CONVO_MAP.get(session['username'])
 
-                if not isinstance(interactive_questions, list):
-                    interactive_questions = []
-                    PENDING_INTERACTIVE_MAP.update({session_context.user_ctx.user_name: interactive_questions})
+            if MAIN_MODEL is None:
+                return jsonify({'error': 'LLM Model not found'}), 404
 
-                interactive_questions.append(interactive_ctx.interactive_question)
-                return
+            context = apply_user_template(CRASH_USER_TEMPLATE, session["username"])
+
+            with open(f"{APP_STATIC_CONFIG_DIR_FP}example-sf-policy.json", 'r') as f:
+                context += "\n\n\nAnything to do with the customers policy, refer to their policy in JSON format: \n\n" + f.read()
+            prompt = MAIN_MODEL.build_conversation_prompt(question, context, conversation_history=convo)
+
 
             # Wrap receive_chunk in a generator pattern
             for chunk in MAIN_MODEL.generate_response(prompt, logger=LOGGER):

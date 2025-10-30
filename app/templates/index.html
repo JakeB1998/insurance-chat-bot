@@ -33,6 +33,16 @@
     chatWindow.scrollTop = chatWindow.scrollHeight;
   }
 
+  function createMessageDiv() {
+        let botMsgDiv = document.createElement('div');
+        botMsgDiv.classList.add('message', 'bot');
+        botMsgDiv.innerText = '';
+        chatWindow.appendChild(botMsgDiv);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+
+        return botMsgDiv
+  }
+
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -43,11 +53,7 @@
     addMessage('user', question);
     questionInput.value = '';
 
-    const botMsgDiv = document.createElement('div');
-    botMsgDiv.classList.add('message', 'bot');
-    botMsgDiv.innerText = '';
-    chatWindow.appendChild(botMsgDiv);
-    chatWindow.scrollTop = chatWindow.scrollHeight;
+    var currentMessageDiv = null
 
     // Track if any text was added
     let receivedAnyContent = false;
@@ -86,8 +92,6 @@
         const { value, done: doneReading } = await reader.read();
         done = doneReading;
 
-
-
         if (value) {
           let chunk = decoder.decode(value);
 
@@ -98,22 +102,27 @@
           if (chunk.startsWith('data: ')) {
             chunk = chunk.replace('data: ', '');
           }
+          console.log(chunk)
           try {
 
               const data = JSON.parse(chunk);
               receivedAnyContent = true;
 
               if (data.type === 'text') {
-                botMsgDiv.innerText += data.content;
+                  if (currentMessageDiv == null)
+                      currentMessageDiv = createMessageDiv()
+
+                currentMessageDiv.innerText += data.content;
               } else if (data.type === 'question') {
-                botMsgDiv.classList.add('question');
-                botMsgDiv.id = data.question_id
+                currentMessageDiv = createMessageDiv()
+                currentMessageDiv.classList.add('question');
+                currentMessageDiv.id = data.question_id
 
                 // Create and add question text
                 const questionText = document.createElement('div');
                 questionText.className = 'question-text';
                 questionText.innerText = data.content;
-                botMsgDiv.appendChild(questionText);
+                currentMessageDiv.appendChild(questionText);
 
                 // Create form for choices
                 const choiceForm = document.createElement('div');
@@ -166,7 +175,8 @@
                   choiceForm.appendChild(button);
                 });
 
-                botMsgDiv.appendChild(choiceForm);
+                currentMessageDiv.appendChild(choiceForm);
+
               }
 
               chatWindow.scrollTop = chatWindow.scrollHeight;
