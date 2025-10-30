@@ -5,6 +5,7 @@ from functools import wraps
 
 from flask import redirect, session, url_for, request
 
+from app.assistant.nlp.nlp_config import NLPConfig
 from app.assistant.nlp.nlp_context import NLPContext
 from app.llm.llm_config import ModelConfig
 from app.llm.llm_model_factory import create_model
@@ -45,7 +46,7 @@ SESSION_CONTEXT_MAP = {}
 with open(f"{APP_STATIC_CONFIG_DIR_FP}nlp{os.path.sep}nlp-patterns-config.json", "r") as fp:
     PATTERNS_MAP = json.load(fp)
 
-NPL_MODEL_CTX = NLPContext()
+NPL_MODEL_CTX = NLPContext(nlp_config=NLPConfig(model_name="nlp", language="en", processors=['tokenize','mwt','pos','lemma','depparse']))
 
 def login_required(f):
     @wraps(f)

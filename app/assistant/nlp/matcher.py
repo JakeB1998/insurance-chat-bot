@@ -1,7 +1,9 @@
-from typing import Dict, List
+from typing import Dict, List, Any
 
 from stanza import Document
 from stanza.models.common.doc import Word
+
+from app.config.app_vars import LOGGER
 
 
 def does_pattern_match(words: List['Word'], pattern: List[Dict[str, str]], distance: int = 0):
@@ -38,14 +40,20 @@ def does_pattern_match(words: List['Word'], pattern: List[Dict[str, str]], dista
     return False
 
 
-def get_intent(doc, pattern_map: Dict[str, List[List[Dict[str, str]]]], distance: int = 0):
+def get_intent(doc: Document, pattern_map: Dict[str, List[Dict[str, Any]]]):
     # Flatten all words in the doc into a list
     words: List[Word] = [word for sent in doc.sentences for word in sent.words]
 
-    for intent, patterns in pattern_map.items():
-        for pattern in patterns:
-            # Pattern is a list of kew pair values (key: stanza augment, value: word to look for)
-            if does_pattern_match(words, pattern, distance=distance):
+    for intent, pattern_ctxs in pattern_map.items():
+        for pattern_ctx in pattern_ctxs:
+            distance = 0
+
+            try:
+                distance = int(pattern_ctx.get('distance', 0))
+            except ValueError as e:
+                LOGGER.error(f"Failed to convert 'distance' parameter in {pattern_ctxs}. Using default distance {distance}")
+
+            if does_pattern_match(words, pattern_ctx.get('patterns', []), distance=distance):
                 return intent
 
 

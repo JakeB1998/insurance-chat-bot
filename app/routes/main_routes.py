@@ -3,6 +3,7 @@ from typing import List, Optional
 
 from flask import Blueprint, jsonify, render_template, request, redirect, url_for, session, stream_with_context, \
     Response
+from stanza import Document
 
 from app.Response import ResponseInteractiveCTX
 from app.assistant.actions.action import PrintAction
@@ -15,13 +16,14 @@ from app.llm.llm_conversation_ctx import LLMConversationCTX
 from app.question import YesNoQuestion, InteractiveQuestion, MultipleChoiceQuestion
 from app.session_ctx import SessionContext
 from app.utils.llm_context_template_utils import apply_user_template
+from app.utils.nlp_utils import get_subject
 
 main_r = Blueprint('main_r', __name__)
 
 PENDING_INTERACTIVE_MAP = {}
 
 
-def __handle_intent(intent) -> Optional[ResponseInteractiveCTX]:
+def __handle_intent(doc: Document, intent) -> Optional[ResponseInteractiveCTX]:
     interactive_ctx: ResponseInteractiveCTX = None
     question = None
     action_map = {}
@@ -29,29 +31,51 @@ def __handle_intent(intent) -> Optional[ResponseInteractiveCTX]:
     if intent == IntentTypes.GET_AGENT:
         interactive_ctx = ResponseInteractiveCTX(content="Do you want your agent to call you?",
                                                  response_type="question")
+
         question = YesNoQuestion(question_content=interactive_ctx.content)
-        action_map = {"yes": PrintAction(action_args=[f"The user wants their agent to call them"]),
-                   "no": PrintAction(action_args=[f"The user does not their agent to call them"])}
+
+        subject = get_subject(doc=doc, verb="get", translation_map={"i": "user"})
+
+        if subject is None:
+            subject = "user"
+
+        action_map = {"yes": PrintAction(action_args=[f"{subject} wants their agent to call them"]),
+                   "no": PrintAction(action_args=[f"{subject} does not their agent to call them"])}
 
 
     elif intent == IntentTypes.GET_CLAIM:
         interactive_ctx = ResponseInteractiveCTX(content="Do you want to get a claim?",
                                                  response_type="question")
+
         question = YesNoQuestion(question_content=interactive_ctx.content)
-        action_map = {"yes": PrintAction(action_args=[f"The user wants tyo get a claim"]),
-                   "no": PrintAction(action_args=[f"The user does not want to get a claimm"])}
+
+        subject = get_subject(doc=doc, verb="get", translation_map={"i": "user"})
+
+        if subject is None:
+            subject = "user"
+
+        action_map = {"yes": PrintAction(action_args=[f"{subject} wants to get a claim"]),
+                   "no": PrintAction(action_args=[f"{subject} does not want to get a claimm"])}
 
     elif intent == IntentTypes.FILE_CLAIM:
         interactive_ctx = ResponseInteractiveCTX(content="Do you want to file a claim?",
                                                  response_type="question")
+
         question = YesNoQuestion(question_content=interactive_ctx.content)
-        action_map = {"yes": PrintAction(action_args=[f"The user wants file a claim"]),
-                   "no": PrintAction(action_args=[f"The user does not want to file a claim"])}
+
+        subject = get_subject(doc=doc, verb="file", translation_map={"i": "user"})
+
+        if subject is None:
+            subject = "user"
+
+        action_map = {"yes": PrintAction(action_args=[f"{subject} wants file a claim"]),
+                   "no": PrintAction(action_args=[f"{subject} does not want to file a claim"])}
 
     for k, v in action_map.items():
         question.register_choice(choice=k, action=v)
 
-    interactive_ctx.interactive_question = question
+    if isinstance(interactive_ctx, ResponseInteractiveCTX):
+        interactive_ctx.interactive_question = question
 
     return interactive_ctx
 
@@ -114,6 +138,7 @@ def answer_interactive():
     for action in actions:
         action.do_action(*action.action_args, **action.action_kwargs)
 
+
     pending_interactives.remove(interactive_question)
 
     return jsonify({"status": 200})
@@ -134,9 +159,9 @@ def chat():
         return jsonify({'error': 'Missing question'}), 400
 
     nlp_ctx = NPL_MODEL_CTX
-    doc = nlp_ctx(question)
+    doc: Document = nlp_ctx(question)
 
-    intent = get_intent(doc, PATTERNS_MAP, distance=1)
+    intent = get_intent(doc, PATTERNS_MAP)
 
     convo: LLMConversationCTX = USER_LLM_CONVO_MAP.get(session['username'])
 
@@ -149,8 +174,6 @@ def chat():
         context += "\n\n\nAnything to do with the customers policy, refer to their policy in JSON format: \n\n" + f.read()
     prompt = MAIN_MODEL.build_conversation_prompt(question, context, conversation_history=convo)
 
-    example_question = YesNoQuestion(question_content=question)
-    example_question = YesNoQuestion(question_content="Do you want you agent (Fred Kunnigham) to call you?")
     def generate():
         try:
             content = ""
@@ -158,7 +181,7 @@ def chat():
             token_buffer = ""
             token_count = 0
 
-            interactive_ctx = __handle_intent(intent)
+            interactive_ctx = __handle_intent(doc, intent)
 
             if isinstance(interactive_ctx, ResponseInteractiveCTX):
                 yield f"data: {json.dumps(interactive_ctx.to_dict())}\n\n"
