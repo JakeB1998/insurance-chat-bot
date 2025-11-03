@@ -8,7 +8,6 @@ A simple web-based chatbot interface built with **Flask** and **vanilla JavaScri
 
 ![App Screenshot](app-example.png)
 
-![App Screenshot](app-example-interactive.png)
 
 
 ---
