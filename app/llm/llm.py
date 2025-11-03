@@ -10,7 +10,7 @@ from typing import List, Dict, Any, Tuple, Union
 
 from app.llm.llm_config import ModelConfig
 from app.llm.llm_conversation_ctx import LLMConversationCTX
-from app.utils.llm_utils import build_conversation_prompt, load_model
+from app.utils.llm_utils import build_prompt, load_model
 
 
 class InsuranceLLMCTX:
@@ -42,11 +42,12 @@ class InsuranceLLMCTX:
             offload_kqv=self.config.offload_kqv
         )
 
-    def build_conversation_prompt(self, new_question: str, context: str = "", conversation_history: Union[List[dict], LLMConversationCTX] = None) -> str:
+    def build_prompt(self, new_question: str, context: str = "", conversation_history: Union[List[dict], LLMConversationCTX] = None) -> str:
         if conversation_history is None:
             conversation_history = []
 
-        return build_conversation_prompt(question=new_question, system_context=self.system_context, context=context, conversation_history=conversation_history)
+        # This calls function form llm_utils.py
+        return build_prompt(question=new_question, system_context=self.system_context, context=context, conversation_history=conversation_history)
 
     def generate_response(self, prompt: str, logger = None):
         if logger is None:

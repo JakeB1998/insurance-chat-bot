@@ -6,6 +6,7 @@ from app.config.app_vars import LOGGER
 
 from app.routes.main_routes import main_r
 from app.routes.login_routes import login_r
+from app.utils.bool_utils import to_bool
 
 app = Flask(__name__)
 
@@ -25,6 +26,7 @@ def log_request():
         except Exception as e:
             LOGGER.warning(f"Could not parse JSON: {e}")
 
+
 # Optionally, log responses too
 @app.after_request
 def log_response(response):
@@ -35,11 +37,14 @@ def log_response(response):
 if __name__ == '__main__':
     LOGGER.info("Starting app")
 
-    expose = bool(os.environ.get("EXPOSE", False))
+    expose = to_bool(os.environ.get("EXPOSE", False))
+    threaded = to_bool(os.environ.get("THREADED", True))
+    debug = to_bool(os.environ.get("DEBUG", False))
     kwargs = {}
 
     if expose:
         kwargs.update({"host": "0.0.0.0"})
 
-    app.run(**kwargs, debug=True)
+    kwargs.update({"threaded": threaded, "debug": debug})
+    app.run(**kwargs, processes=1)
 

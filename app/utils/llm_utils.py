@@ -36,7 +36,7 @@ def load_model(
     except Exception as e:
         raise e
 
-def build_conversation_prompt(question: str, system_context: str, context: str = "", conversation_history: Union[List[dict], LLMConversationCTX] = None) -> str:
+def build_prompt(question: str, system_context: str, context: str = "", conversation_history: Union[List[dict], LLMConversationCTX] = None) -> str:
     if not context:
         context = ""
 
@@ -62,3 +62,37 @@ def build_conversation_prompt(question: str, system_context: str, context: str =
     prompt += "Assistant:"
 
     return prompt
+
+
+
+# def build_prompt(question: str, system_context: str, context: str = "", conversation_history: Union[List[dict], LLMConversationCTX] = None) -> str:
+#     if not context:
+#         context = ""
+#
+#     if conversation_history is None:
+#         conversation_history = []
+#
+#     if isinstance(conversation_history, LLMConversationCTX):
+#         conversation_history = conversation_history.conversation_history
+#
+#     prompt = f"==== SYSTEM INSTRUCTIONS ====\n {system_context}\n"
+#
+#     # Add conversation history
+#     if len(conversation_history) > 0:
+#         prompt+= "==== CONVERSATION_HISTORY ====\n"
+#
+#     for exchange in conversation_history:
+#         prompt += f"User: {exchange['user']}\n"
+#         prompt += f"Assistant: {exchange['assistant']}\n"
+#
+#     # Add the new question
+#     if context:
+#         prompt += f"==== CONTEXT ====\n {context}\n"
+#
+#     prompt += f"==== USER INPUT ====\n {question}\n"
+#
+#
+#     prompt += "==== ASSISTANT ====\n"
+#
+#
+#     return prompt

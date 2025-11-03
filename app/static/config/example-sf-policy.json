@@ -5,8 +5,8 @@
     "policy_number": "SF-123456789",
     "effective_date": "2025-01-01",
     "expiration_date": "2026-01-01",
-    "named_insured": "John Doe",
-    "address": "123 Main Street, Springfield, IL 62704",
+    "named_insured": "Jake Michael",
+    "address": "1533 falconridgeway, Bloomington, IL 61704",
     "vehicle": {
       "year": 2018,
       "make": "Honda",
@@ -72,5 +72,13 @@
       "website": "https://www.statefarm.com"
     }
   },
+    "contact_information": {
+      "claims": "1-800-STATEFARM",
+      "website": "https://www.statefarm.com",
+      "agent": {
+        "name": "Jordan Brooke",
+        "phone": "815-980-6104"
+      }
+    },
   "thank_you_message": "Thank you for choosing State Farm®."
 }

@@ -25,6 +25,10 @@ class Question:
         self.answered = answered
 
 
+    def __str__(self):
+        return self.question_content
+
+
 class InteractiveQuestion(Question):
     def __init__(self, question_content: str, question_type: str = QuestionTypes.INTERACTIVE, answered: bool = False, answer: Any = None, action: Action = None):
         super().__init__(question_content=question_content, question_type=question_type, answered=answered, answer=answer)
@@ -105,12 +109,20 @@ class MultipleChoiceQuestion(InteractiveQuestion):
         self.choice_action_map.update({choice: action})
 
         return True
+
     def to_dict(self):
         ret = super().to_dict()
         ret.update({"choices": self.choices})
         return ret
 
+    def __str__(self):
+        return str(self.to_dict())
+
 
 class YesNoQuestion(MultipleChoiceQuestion):
     def __init__(self, question_content: str, question_type: str = QuestionTypes.YES_NO, answered: bool = False, answer: Any = None, action: Action = None):
         super().__init__(question_content=question_content, question_type=question_type,  choices=["yes", "no"], answered=answered, answer=answer, action=action)
+
+
+    def __str__(self):
+        return super().__str__()

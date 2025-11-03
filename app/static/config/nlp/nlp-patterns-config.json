@@ -13,9 +13,7 @@
       {"distance": 1, "patterns": [{"LEMMA": "track"}, {"LEMMA": "claim"}]}
     ],
     "GET_AGENT": [
-        {
-          "distance": 1,
-          "patterns": [{"LEMMA": "get"}, {"LEMMA": "agent"}]
-        }
+      {"distance": 1, "patterns": [{"LEMMA": "get"}, {"LEMMA": "agent"}]},
+      {"distance": 1, "patterns": [{"LEMMA": "my"}, {"LEMMA": "agent"}]}
     ]
 }

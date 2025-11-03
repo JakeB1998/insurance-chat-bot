@@ -11,10 +11,11 @@ from app.assistant.actions.action import PrintAction
 from app.assistant.intent import IntentTypes
 from app.assistant.nlp.matcher import Match, MatchedIntent, get_intents
 from app.assistant.nlp.nlp_context import NLPContext
-from app.config.app_vars import MAIN_MODEL, LOGGER, USER_LLM_CONVO_MAP, login_required, CRASH_USER_TEMPLATE, \
+from app.config.app_vars import GEN_AI_MODEL_CTX, LOGGER, USER_LLM_CONVO_MAP,  CRASH_USER_TEMPLATE, \
     RESPONSE_LLM_FORMATTING_TEMPLATE, APP_STATIC_CONFIG_DIR_FP, SESSION_CONTEXT_MAP, NPL_MODEL_CTX, PATTERNS_MAP
 from app.llm.llm_conversation_ctx import LLMConversationCTX
 from app.question import YesNoQuestion, InteractiveQuestion, MultipleChoiceQuestion
+from app.routes import login_required
 from app.session_ctx import SessionContext
 from app.utils.llm_context_template_utils import apply_user_template
 from app.utils.nlp_utils import get_subject, get_subject_in_sentence
@@ -22,6 +23,7 @@ from app.utils.nlp_utils import get_subject, get_subject_in_sentence
 main_r = Blueprint('main_r', __name__)
 
 PENDING_INTERACTIVE_MAP = {}
+FOLLOW_UP_RESPONSES_MAP = {}
 
 
 def __handle_intent(doc: Document, intent, match_ctx: Match) -> Optional[ResponseInteractiveCTX]:
@@ -42,6 +44,8 @@ def __handle_intent(doc: Document, intent, match_ctx: Match) -> Optional[Respons
 
         action_map = {"yes": PrintAction(action_args=[f"{subject} wants their agent to call them"]),
                    "no": PrintAction(action_args=[f"{subject} does not their agent to call them"])}
+
+        interactive_ctx.follow_up_responses.append({"content": "Your agent will contact you", "type": "text"})
 
 
     elif intent == IntentTypes.GET_CLAIM:
@@ -80,6 +84,18 @@ def __handle_intent(doc: Document, intent, match_ctx: Match) -> Optional[Respons
 
     return interactive_ctx
 
+
+def __generate_context(user_input: str, doc: Document, intents: List[MatchedIntent]):
+    context = ""
+
+    # TODO
+
+    # context = apply_user_template(CRASH_USER_TEMPLATE, session["username"])
+
+    with open(f"{APP_STATIC_CONFIG_DIR_FP}example-sf-policy.json", 'r') as f:
+        context += "\n\n\nAnything to do with the customers policy, refer to their policy in JSON format: \n\n" + f.read()
+
+    return context
 @main_r.route('/')
 @login_required
 def index():
@@ -139,10 +155,10 @@ def answer_interactive():
     for action in actions:
         action.do_action(*action.action_args, **action.action_kwargs)
 
-
     pending_interactives.remove(interactive_question)
+    followed_up_responses = FOLLOW_UP_RESPONSES_MAP.get(interactive_question.id, [])
 
-    return jsonify({"status": 200})
+    return jsonify({"status": 200}) if len(followed_up_responses) < 1 else jsonify({"follow_ups": followed_up_responses})
 
 
 @main_r.route('/chat', methods=['POST'])
@@ -166,49 +182,24 @@ def chat():
 
     def generate():
         try:
-            for i, matched_intent in enumerate(matched_intents):
-                interactive_ctx = __handle_intent(doc, matched_intent.intent, match_ctx=matched_intent)
-
-                if isinstance(interactive_ctx, ResponseInteractiveCTX):
-                    yield f"data: {json.dumps(interactive_ctx.to_dict())}\n\n"
-
-                    if i + 1 < len(matched_intents):
-                        # To fix a wierd streaming bug
-                        time.sleep(0.25)
-
-                    LOGGER.debug(f"Sent interactive question steam data  {json.dumps(interactive_ctx.to_dict())}")
-
-                    interactive_questions = PENDING_INTERACTIVE_MAP.get(session_context.user_ctx.user_name)
-
-                    if not isinstance(interactive_questions, list):
-                        interactive_questions = []
-                        PENDING_INTERACTIVE_MAP.update({session_context.user_ctx.user_name: interactive_questions})
-
-                    interactive_questions.append(interactive_ctx.interactive_question)
-
-            if len(matched_intents) > 0:
-                return
-
+            # LLM Response System
             content = ""
 
             token_buffer = ""
             token_count = 0
 
-
             convo: LLMConversationCTX = USER_LLM_CONVO_MAP.get(session['username'])
 
-            if MAIN_MODEL is None:
+            if GEN_AI_MODEL_CTX is None:
                 return jsonify({'error': 'LLM Model not found'}), 404
 
-            context = apply_user_template(CRASH_USER_TEMPLATE, session["username"])
+            context = __generate_context(user_input=question, doc=doc, intents=matched_intents)
 
-            with open(f"{APP_STATIC_CONFIG_DIR_FP}example-sf-policy.json", 'r') as f:
-                context += "\n\n\nAnything to do with the customers policy, refer to their policy in JSON format: \n\n" + f.read()
-            prompt = MAIN_MODEL.build_conversation_prompt(question, context, conversation_history=convo)
+            prompt = GEN_AI_MODEL_CTX.build_prompt(question, context, conversation_history=convo)
 
 
             # Wrap receive_chunk in a generator pattern
-            for chunk in MAIN_MODEL.generate_response(prompt, logger=LOGGER):
+            for chunk in GEN_AI_MODEL_CTX.generate_response(prompt, logger=LOGGER):
                 chunk = str(chunk)
 
                 content += chunk
@@ -222,13 +213,41 @@ def chat():
                     token_buffer = ''
                     token_count = 0
 
-            yield f"data: {json.dumps({'content': token_buffer, 'type': 'text'})}\n\n"
-
             if len(content) == 0:
                 LOGGER.warning(f"LLM gave blank response for question: '{question}'")
+                yield f"data: {json.dumps({'error': {'msg': 'LLM generated a blank response',  'code': 2}, 'type': 'error'})}\n\n"
                 return
 
+            yield f"data: {json.dumps({'content': token_buffer, 'type': 'text'})}\n\n"
+
+
             convo.add(question=question, response=content)
+
+            LOGGER.debug(f"LLM gave response for question: '{question}'. Response: {content}")
+
+            # Action System
+            for i, matched_intent in enumerate(matched_intents):
+                interactive_ctx = __handle_intent(doc, matched_intent.intent, match_ctx=matched_intent)
+
+                LOGGER.debug(f"Handled intent '{matched_intent.intent}'. Submitting Question: {str(interactive_ctx.interactive_question)}")
+
+                if isinstance(interactive_ctx, ResponseInteractiveCTX):
+                    if i + 1 < len(matched_intents):
+                        # To fix a wierd streaming bug
+                        time.sleep(0.25)
+
+                    yield f"data: {json.dumps(interactive_ctx.to_dict())}\n\n"
+
+                    LOGGER.debug(f"Sent interactive question steam data  {json.dumps(interactive_ctx.to_dict())}")
+
+                    interactive_questions = PENDING_INTERACTIVE_MAP.get(session_context.user_ctx.user_name)
+
+                    if not isinstance(interactive_questions, list):
+                        interactive_questions = []
+                        PENDING_INTERACTIVE_MAP.update({session_context.user_ctx.user_name: interactive_questions})
+
+                    FOLLOW_UP_RESPONSES_MAP.update({interactive_ctx.interactive_question.id: interactive_ctx.follow_up_responses})
+                    interactive_questions.append(interactive_ctx.interactive_question)
         except GeneratorExit:
             LOGGER.info(f"Generator exit for user {session['username']}")
 

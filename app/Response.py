@@ -8,6 +8,7 @@ class ResponseInteractiveCTX():
         self.content = content
         self.response_type = response_type
         self.interactive_question: InteractiveQuestion = interactive_question
+        self.follow_up_responses = []
 
     def to_dict(self):
         ret = {"content": self.content, "type": self.response_type}
