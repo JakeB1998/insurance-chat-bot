@@ -23,6 +23,8 @@
   const chatWindow = document.getElementById('chat-window');
   const cancelButton = document.getElementById('cancel-button');
 
+  var currentMessageDivText = null
+
   let controller = null;
 
   function addMessage(sender, text) {
@@ -37,120 +39,130 @@
         let botMsgDiv = document.createElement('div');
         botMsgDiv.classList.add('message', 'bot');
         botMsgDiv.innerText = '';
-        chatWindow.appendChild(botMsgDiv);
-        chatWindow.scrollTop = chatWindow.scrollHeight;
 
         return botMsgDiv
   }
 
-  function handleMsgDataChunk() {
+  function handleMsgDataChunk(chunk) {
+       var data = null
+
+
        try {
-              var data = null
 
-              try {
-                  data = JSON.parse(chunk);
-              } catch (error) {
-                  throw new Error("error parsing chunk" + chunk + "\n" + err)
-              }
-              receivedAnyContent = true;
+           if (typeof chunk === "string") {
+               data = JSON.parse(chunk);
+           } else {
+               data = chunk
+           }
+       } catch (error) {
+           throw new Error("error parsing chunk" + chunk + "\n" + err)
+       }
+       receivedAnyContent = true;
 
-              if (data.type === 'error') {
-                  let errorUserMsg = ""
-                  let errorMsg = ""
+       if (data.type === 'error') {
+           var currentMessageDiv = createMessageDiv()
+           let errorUserMsg = ""
+           let errorMsg = ""
 
-                if (currentMessageDiv == null)
-                    currentMessageDiv = createMessageDiv()
 
-                  if (!data.error) {
-                      throw new Error("Received error from server but didnt contain error context in its data response.")
-                  }
+           if (!data.error) {
+               throw new Error("Received error from server but didnt contain error context in its data response.")
+           }
 
-                  error = data.error.msg
-                  if (data.error.code === 1) {
-                      errorUserMsg = "The LLM gave a blank response"
-                  }
-                  else {
-                      errorUserMsg = errorMsg
-                  }
+           error = data.error.msg
+           if (data.error.code === 1) {
+               errorUserMsg = "The LLM gave a blank response"
+           } else {
+               errorUserMsg = errorMsg
+           }
 
-                currentMessageDiv.innerText += errorUserMsg;
-                throw new Error(errorMsg)
+           currentMessageDiv.innerText += errorUserMsg;
+           chatWindow.appendChild(currentMessageDiv);
 
-              }
-              else if (data.type === 'text') {
-                  if (currentMessageDiv == null) {
-                      currentMessageDiv = createMessageDiv()
-                  }
 
-                currentMessageDiv.innerText += data.content;
-              }
-              else if (data.type === 'question') {
-                currentMessageDiv = createMessageDiv()
-                currentMessageDiv.classList.add('question');
-                currentMessageDiv.id = data.question_id
+           throw new Error(errorMsg)
 
-                // Create and add question text
-                const questionText = document.createElement('div');
-                questionText.className = 'question-text';
-                questionText.innerText = data.content;
-                currentMessageDiv.appendChild(questionText);
+       } else if (data.type === 'text') {
 
-                // Create form for choices
-                const choiceForm = document.createElement('div');
-                choiceForm.className = 'choice-form';
-                let buttons = []
+           if (currentMessageDivText == null) {
+               currentMessageDivText = createMessageDiv()
+               chatWindow.appendChild(currentMessageDivText)
+           }
 
-                data.choices.forEach(choice => {
-                  const button = document.createElement('button');
-                  buttons.push(button)
-                  button.className = 'choice-button';
 
-                  if (choice) {
-                      choice = choice.charAt(0).toUpperCase() + choice.slice(1);
-                  }
+           currentMessageDivText.innerText += data.content;
+           chatWindow.appendChild(currentMessageDivText);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+       } else if (data.type === 'question') {
+           var currentMessageDiv = createMessageDiv()
+           currentMessageDiv.classList.add('question');
+           currentMessageDiv.id = data.question_id
 
-                  button.innerText = choice;
+           // Create and add question text
+           const questionText = document.createElement('div');
+           questionText.className = 'question-text';
+           questionText.innerText = data.content;
+           currentMessageDiv.appendChild(questionText);
+           chatWindow.appendChild(currentMessageDiv);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
 
-                  button.onclick = () => {
-                    // addMessage('user', choice); // Show choice in chat
-                    // questionInput.value = choice;
-                    // form.dispatchEvent(new Event('submit'));
-                    // botMsgDiv.classList.remove('question');
-                    // choiceForm.remove(); // remove form after answer
-                      fetch('/answer', {
-                        method: 'POST',
-                        headers: {
-                          'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ "question_id": data.question_id, "answer": choice }),
-                        signal
-                      }).then(response => {
-                          if (!response.ok) {
-                            throw new Error(`HTTP error! status: ${response.status}`);
-                          }
-                          button.style.color = "green"
-                          buttons.forEach((btn) => {
-                              btn.disabled = true
-                          })
+           // Create form for choices
+           const choiceForm = document.createElement('div');
+           choiceForm.className = 'choice-form';
+           let buttons = []
 
-                          return response.json();  // or response.text(), etc.
-                        })
-                        .then(data => {
-                          console.log('Response data:', data);
-                        })
-                        .catch(error => {
-                          console.error('Fetch error:', error);
-                        });
-                  };
+           data.choices.forEach(choice => {
+               const button = document.createElement('button');
+               buttons.push(button)
+               button.className = 'choice-button';
 
-                  choiceForm.appendChild(button);
-                });
+               if (choice) {
+                   choice = choice.charAt(0).toUpperCase() + choice.slice(1);
+               }
 
-                currentMessageDiv.appendChild(choiceForm);
+               button.innerText = choice;
 
-              }
+               button.onclick = () => {
+                   fetch('/answer', {
+                       method: 'POST',
+                       headers: {
+                           'Content-Type': 'application/json'
+                       },
+                       body: JSON.stringify({"question_id": data.question_id, "answer": choice}),
+                   })
+                   .then(response => {
+                       if (!response.ok) {
+                           throw new Error(`HTTP error! status: ${response.status}`);
+                       }
+                       button.style.color = "green"
+                       buttons.forEach((btn) => {
+                           btn.disabled = true
+                       })
 
-              chatWindow.scrollTop = chatWindow.scrollHeight;
+                       return response.json();  // or response.text(), etc.
+                   })
+                   .then(data => {
+                       console.log('Response data:', data);
+                       if (data.hasOwnProperty("follow_ups")) {
+                           data.follow_ups.forEach((chunk) => {
+                               handleMsgDataChunk(chunk)
+                           })
+                       }
+                   })
+                   .catch(error => {
+                       console.error('Fetch error:', error);
+                   });
+               };
+
+               choiceForm.appendChild(button);
+           });
+
+           currentMessageDiv.appendChild(choiceForm);
+           currentMessageDiv = null
+
+       }
+
+       chatWindow.scrollTop = chatWindow.scrollHeight;
   }
 
   form.addEventListener('submit', async (e) => {
@@ -163,7 +175,7 @@
     addMessage('user', question);
     questionInput.value = '';
 
-    var currentMessageDiv = null
+
 
     // Track if any text was added
     let receivedAnyContent = false;
@@ -197,6 +209,9 @@
       const reader = res.body.getReader();
       const decoder = new TextDecoder('utf-8');
       let done = false;
+      currentMessageDivText = createMessageDiv()
+        chatWindow.appendChild(currentMessageDivText)
+
 
       while (!done) {
         const { value, done: doneReading } = await reader.read();
@@ -213,114 +228,8 @@
             chunk = chunk.replace('data: ', '');
           }
 
-
           try {
-              var data = null
-
-              try {
-                  data = JSON.parse(chunk);
-              } catch (error) {
-                  throw new Error("error parsing chunk" + chunk + "\n" + err)
-              }
-              receivedAnyContent = true;
-
-              if (data.type === 'error') {
-                  let errorUserMsg = ""
-                  let errorMsg = ""
-
-                if (currentMessageDiv == null)
-                    currentMessageDiv = createMessageDiv()
-
-                  if (!data.error) {
-                      throw new Error("Received error from server but didnt contain error context in its data response.")
-                  }
-
-                  error = data.error.msg
-                  if (data.error.code === 1) {
-                      errorUserMsg = "The LLM gave a blank response"
-                  }
-                  else {
-                      errorUserMsg = errorMsg
-                  }
-
-                currentMessageDiv.innerText += errorUserMsg;
-                throw new Error(errorMsg)
-
-              }
-              else if (data.type === 'text') {
-                  if (currentMessageDiv == null) {
-                      currentMessageDiv = createMessageDiv()
-                  }
-
-                currentMessageDiv.innerText += data.content;
-              }
-              else if (data.type === 'question') {
-                currentMessageDiv = createMessageDiv()
-                currentMessageDiv.classList.add('question');
-                currentMessageDiv.id = data.question_id
-
-                // Create and add question text
-                const questionText = document.createElement('div');
-                questionText.className = 'question-text';
-                questionText.innerText = data.content;
-                currentMessageDiv.appendChild(questionText);
-
-                // Create form for choices
-                const choiceForm = document.createElement('div');
-                choiceForm.className = 'choice-form';
-                let buttons = []
-
-                data.choices.forEach(choice => {
-                  const button = document.createElement('button');
-                  buttons.push(button)
-                  button.className = 'choice-button';
-
-                  if (choice) {
-                      choice = choice.charAt(0).toUpperCase() + choice.slice(1);
-                  }
-
-                  button.innerText = choice;
-
-                  button.onclick = () => {
-                    // addMessage('user', choice); // Show choice in chat
-                    // questionInput.value = choice;
-                    // form.dispatchEvent(new Event('submit'));
-                    // botMsgDiv.classList.remove('question');
-                    // choiceForm.remove(); // remove form after answer
-                      fetch('/answer', {
-                        method: 'POST',
-                        headers: {
-                          'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ "question_id": data.question_id, "answer": choice }),
-                        signal
-                      }).then(response => {
-                          if (!response.ok) {
-                            throw new Error(`HTTP error! status: ${response.status}`);
-                          }
-                          button.style.color = "green"
-                          buttons.forEach((btn) => {
-                              btn.disabled = true
-                          })
-
-                          return response.json();  // or response.text(), etc.
-                        })
-                        .then(data => {
-                          console.log('Response data:', data);
-                        })
-                        .catch(error => {
-                          console.error('Fetch error:', error);
-                        });
-                  };
-
-                  choiceForm.appendChild(button);
-                });
-
-                currentMessageDiv.appendChild(choiceForm);
-
-              }
-
-              chatWindow.scrollTop = chatWindow.scrollHeight;
+              handleMsgDataChunk(chunk)
           } catch (err) {
               console.error(err)
           }
@@ -329,17 +238,22 @@
 
     } catch (err) {
       if (err.name === 'AbortError') {
-        if (!receivedAnyContent) {
-          botMsgDiv.remove(); // Remove empty bubble if nothing was streamed
+        if (!receivedAnyContent && currentMessageDivText != null) {
+          currentMessageDivText.remove(); // Remove empty bubble if nothing was streamed
+            currentMessageDivText = null
         } else {
-          botMsgDiv.innerText += '\n[Stream canceled]';
+            let msgDiv = createMessageDiv() ? currentMessageDivText == null : currentMessageDivText
+          msgDiv.innerText += '\n[Stream canceled]';
         }
       } else {
-        botMsgDiv.innerText = 'Error connecting to server.';
+          let div = createMessageDiv()
+        div.innerText = 'Error connecting to server.';
+          chatWindow.appendChild(div)
       }
     } finally {
       cancelButton.style.display = 'none';
       cancelButton.innerText = 'Cancel';
+      currentMessageDivText = null;
     }
   });
 </script>
